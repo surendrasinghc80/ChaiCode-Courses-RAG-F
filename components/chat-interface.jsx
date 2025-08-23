@@ -430,8 +430,8 @@ export function ChatInterface({ sources, onSendMessage }) {
       const utter = new SpeechSynthesisUtterance(
         sanitizeForSpeech(message.content)
       );
-      utter.rate = 1; // normal speed
-      utter.pitch = 1; // normal pitch
+      utter.rate = 0.9; // normal speed
+      utter.pitch = 0.9; // normal pitch
       utter.onend = () => setSpeakingId(null);
       utter.onerror = () => setSpeakingId(null);
       ttsUtteranceRef.current = utter;
