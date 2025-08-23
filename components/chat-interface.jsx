@@ -255,6 +255,9 @@ export function ChatInterface({ sources, onSendMessage }) {
   // TTS state
   const [speakingId, setSpeakingId] = useState(null);
   const ttsUtteranceRef = useRef(null);
+  // ElevenLabs audio playback
+  const audioRef = useRef(null);
+  const audioUrlRef = useRef(null);
 
   // Initialize RAG service when sources change
   useEffect(() => {
@@ -428,8 +431,19 @@ export function ChatInterface({ sources, onSendMessage }) {
 
   const stopSpeaking = () => {
     try {
+      // Stop browser TTS if any
       if (typeof window !== "undefined" && window.speechSynthesis) {
         window.speechSynthesis.cancel();
+      }
+      // Stop ElevenLabs audio if playing
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+        audioRef.current = null;
+      }
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+        audioUrlRef.current = null;
       }
     } catch {}
     ttsUtteranceRef.current = null;
@@ -446,21 +460,45 @@ export function ChatInterface({ sources, onSendMessage }) {
     // Stop any current
     stopSpeaking();
 
-    try {
-      if (typeof window === "undefined" || !window.speechSynthesis) return;
-      const utter = new SpeechSynthesisUtterance(
-        sanitizeForSpeech(message.content)
-      );
-      utter.rate = 1; // normal speed
-      utter.pitch = 0.8; // normal pitch
-      utter.onend = () => setSpeakingId(null);
-      utter.onerror = () => setSpeakingId(null);
-      ttsUtteranceRef.current = utter;
-      setSpeakingId(message.id);
-      window.speechSynthesis.speak(utter);
-    } catch (e) {
-      // noop
-    }
+    // Prefer ElevenLabs via /api/tts
+    (async () => {
+      try {
+        const text = sanitizeForSpeech(message.content);
+        if (!text) return;
+        setSpeakingId(message.id);
+        const res = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text,
+            voiceId: process.env.NEXT_PUBLIC_ELEVENLABS_VOICE_ID || undefined,
+          }),
+        });
+        if (!res.ok) {
+          setSpeakingId(null);
+          return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        audioUrlRef.current = url;
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => {
+          setSpeakingId(null);
+          if (audioUrlRef.current) {
+            URL.revokeObjectURL(audioUrlRef.current);
+            audioUrlRef.current = null;
+          }
+          audioRef.current = null;
+        };
+        audio.onerror = () => {
+          setSpeakingId(null);
+        };
+        await audio.play();
+      } catch (e) {
+        setSpeakingId(null);
+      }
+    })();
   };
 
   const hasMessages = messages.length > 0;
