@@ -8,6 +8,7 @@ export async function POST(req) {
       text,
       voiceId,
       modelId = process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2",
+      speed = 0.95,
       stability = 0.5,
       similarityBoost = 0.75,
       style = 0.0,
@@ -57,6 +58,7 @@ export async function POST(req) {
         similarity_boost: similarityBoost,
         style,
         use_speaker_boost,
+        speed,
       },
     };
 
