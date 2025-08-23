@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Settings, Share, Grid3X3, X, Brain, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -13,6 +13,86 @@ export default function NotebookLM() {
   const [showAddSources, setShowAddSources] = useState(false);
   const [sources, setSources] = useState([]);
   const { theme, setTheme } = useTheme();
+
+  // Background image rotation
+  const images = useMemo(
+    () => [
+      "/gradiant-bg-1.jpg",
+      "/gradiant-bg-2.jpg",
+      "/gradiant-bg-3.jpg",
+      "/gradiant-bg-4.jpg",
+      "/gradiant-bg-5.jpg",
+      "/gradiant-bg-6.jpg",
+      "/gradiant-bg-7.jpg",
+      "/gradiant-bg-8.jpg",
+      "/gradiant-bg-9.jpg",
+      "/gradiant-bg-10.jpg",
+      "/gradiant-bg-11.jpg",
+      "/gradiant-bg-12.jpg",
+    ],
+    []
+  );
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [nextIndex, setNextIndex] = useState(1);
+  const [fading, setFading] = useState(false);
+  const ROTATE_MS = 6000; // change every 6 seconds
+  const FADE_MS = 1000; // 1s crossfade
+  const fadeTimeoutRef = useRef(null);
+  const cycleTimeoutRef = useRef(null);
+  const currentIndexRef = useRef(0);
+
+  // Keep ref in sync
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
+  // Rotation loop with preload-before-fade, sequential to avoid overlaps
+  useEffect(() => {
+    let cancelled = false;
+
+    const runCycle = () => {
+      if (cancelled) return;
+      const ni = (currentIndexRef.current + 1) % images.length;
+      const preload = new Image();
+
+      const triggerFade = () => {
+        if (cancelled) return;
+        setNextIndex(ni);
+        setFading(true);
+        if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
+        fadeTimeoutRef.current = setTimeout(() => {
+          if (cancelled) return;
+          setCurrentIndex(ni);
+          setFading(false);
+          // Schedule next cycle after display period
+          cycleTimeoutRef.current = setTimeout(runCycle, ROTATE_MS);
+        }, FADE_MS);
+      };
+
+      // Try decode first for smoother results
+      preload.src = images[ni];
+      if (preload.decode) {
+        preload
+          .decode()
+          .then(triggerFade)
+          .catch(() => {
+            // Fallback to onload if decode fails
+            preload.onload = triggerFade;
+          });
+      } else {
+        preload.onload = triggerFade;
+      }
+    };
+
+    // Initial delay so first image is visible for ROTATE_MS before first change
+    cycleTimeoutRef.current = setTimeout(runCycle, ROTATE_MS);
+
+    return () => {
+      cancelled = true;
+      if (cycleTimeoutRef.current) clearTimeout(cycleTimeoutRef.current);
+      if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
+    };
+  }, [images, ROTATE_MS, FADE_MS]);
 
   const handleAddSources = (newSources) => {
     setSources((prev) => [...prev, ...newSources]);
@@ -29,15 +109,34 @@ export default function NotebookLM() {
 
   return (
     <div className="min-h-screen relative">
-      <div
-        className="fixed inset-0 z-0"
-        style={{
-          backgroundImage: "url(/gradient-bg.jpg)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        }}
-      />
+      {/* Backgrounds with crossfade */}
+      <div className="fixed inset-0 z-0">
+        {/* Current */}
+        <img
+          src={images[currentIndex]}
+          alt="Background current"
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+            fading ? "opacity-0" : "opacity-100"
+          }`}
+          style={{ willChange: "opacity", backfaceVisibility: "hidden", transform: "translateZ(0)" }}
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
+        />
+        {/* Next */}
+        <img
+          src={images[nextIndex]}
+          alt="Background next"
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+            fading ? "opacity-100" : "opacity-0"
+          }`}
+          style={{ willChange: "opacity", backfaceVisibility: "hidden", transform: "translateZ(0)" }}
+          decoding="async"
+          fetchPriority="low"
+          aria-hidden="true"
+          draggable={false}
+        />
+      </div>
 
       <div className="fixed inset-0 z-10 bg-black/60 dark:bg-black/80" />
 
