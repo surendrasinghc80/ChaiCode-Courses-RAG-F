@@ -401,8 +401,29 @@ export function ChatInterface({ sources, onSendMessage }) {
   // --- Text-to-Speech Helpers ---
   const sanitizeForSpeech = (text) => {
     if (!text) return "";
-    const withoutFences = text.replace(/```[\s\S]*?```/g, "");
-    return withoutFences.replace(/\n{2,}/g, ". ").trim();
+    let out = text;
+    // 1) Remove fenced code blocks
+    out = out.replace(/```[\s\S]*?```/g, "");
+    // 2) Remove bracketed citations like [Section: ..., 00:03:40.080 → 00:04:24.230]
+    out = out.replace(/\[Section:[^\]]*\]/gi, "");
+    // 3) Remove any bracketed content that contains timestamps
+    out = out.replace(
+      /\[[^\]]*\b\d{1,2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?[^\]]*\]/g,
+      ""
+    );
+    // 4) Remove explicit time ranges like 00:03:40.080 → 00:04:24.230
+    out = out.replace(
+      /\b\d{1,2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?\s*→\s*\d{1,2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?\b/g,
+      ""
+    );
+    // 5) Remove standalone timestamps like 00:07:17.990 or 03:40 or 07:17:59
+    out = out.replace(/\b\d{1,2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?\b/g, "");
+    // 6) Remove leftover empty brackets and extra punctuation
+    out = out.replace(/\[\s*\]/g, "");
+    // 7) Collapse multiple whitespace/newlines and make smoother sentences
+    out = out.replace(/\n{2,}/g, ". ");
+    out = out.replace(/\s{2,}/g, " ");
+    return out.trim();
   };
 
   const stopSpeaking = () => {
@@ -430,8 +451,8 @@ export function ChatInterface({ sources, onSendMessage }) {
       const utter = new SpeechSynthesisUtterance(
         sanitizeForSpeech(message.content)
       );
-      utter.rate = 0.9; // normal speed
-      utter.pitch = 0.9; // normal pitch
+      utter.rate = 1; // normal speed
+      utter.pitch = 0.8; // normal pitch
       utter.onend = () => setSpeakingId(null);
       utter.onerror = () => setSpeakingId(null);
       ttsUtteranceRef.current = utter;
