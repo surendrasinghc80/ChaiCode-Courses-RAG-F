@@ -7,7 +7,7 @@ import { useTheme } from "next-themes";
 import { SourcesPanel } from "@/components/sources-panel";
 import { AddSourcesModal } from "@/components/add-sources-modal";
 import { ChatInterface } from "@/components/chat-interface";
-import { StudioPanel } from "@/components/studio-panel";
+// import { StudioPanel } from "@/components/studio-panel";
 
 export default function NotebookLM() {
   const [showAddSources, setShowAddSources] = useState(false);
@@ -118,7 +118,11 @@ export default function NotebookLM() {
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
             fading ? "opacity-0" : "opacity-100"
           }`}
-          style={{ willChange: "opacity", backfaceVisibility: "hidden", transform: "translateZ(0)" }}
+          style={{
+            willChange: "opacity",
+            backfaceVisibility: "hidden",
+            transform: "translateZ(0)",
+          }}
           loading="eager"
           decoding="async"
           fetchPriority="high"
@@ -130,7 +134,11 @@ export default function NotebookLM() {
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
             fading ? "opacity-100" : "opacity-0"
           }`}
-          style={{ willChange: "opacity", backfaceVisibility: "hidden", transform: "translateZ(0)" }}
+          style={{
+            willChange: "opacity",
+            backfaceVisibility: "hidden",
+            transform: "translateZ(0)",
+          }}
           decoding="async"
           fetchPriority="low"
           aria-hidden="true"
@@ -146,7 +154,10 @@ export default function NotebookLM() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Brain className="h-6 w-6 text-white" />
-              <span className="text-white font-medium">Untitled notebook</span>
+              <span className="text-white font-medium">ChaiCode RAG</span>
+              <span className="text-white/60 font-light text-xs">
+                (Retrieval Augmented Generation)
+              </span>
             </div>
           </div>
 
@@ -210,7 +221,7 @@ export default function NotebookLM() {
           <ChatInterface sources={sources} onSendMessage={handleSendMessage} />
 
           {/* Studio Panel */}
-          <StudioPanel sources={sources} />
+          {/* <StudioPanel sources={sources} /> */}
         </div>
       </div>
 

@@ -1,47 +1,72 @@
-"use client"
+"use client";
 
-import { useState, useCallback } from "react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { X, Upload, FileText, Globe, Youtube, Copy, Brain, FolderOpen, Presentation } from "lucide-react"
-import { useDropzone } from "react-dropzone"
+import { useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  X,
+  Upload,
+  FileText,
+  Globe,
+  Youtube,
+  Copy,
+  Brain,
+  FolderOpen,
+  Presentation,
+} from "lucide-react";
+import { useDropzone } from "react-dropzone";
+import { uploadVttFiles } from "@/lib/api";
 
 export function AddSourcesModal({ isOpen, onClose, onAddSources }) {
-  const [activeTab, setActiveTab] = useState("upload")
-  const [urlInput, setUrlInput] = useState("")
-  const [textInput, setTextInput] = useState("")
+  const [activeTab, setActiveTab] = useState("upload");
+  const [urlInput, setUrlInput] = useState("");
+  const [textInput, setTextInput] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const onDrop = useCallback(
-    (acceptedFiles) => {
-      const newSources = acceptedFiles.map((file) => ({
-        id: Date.now() + Math.random(),
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        uploadedAt: new Date(),
-        status: "processing",
-      }))
-      onAddSources(newSources)
-      onClose()
+    async (acceptedFiles) => {
+      const vttFiles = acceptedFiles.filter(
+        (f) => f.type === "text/vtt" || f.name?.toLowerCase().endsWith(".vtt")
+      );
+
+      if (vttFiles.length === 0) {
+        alert("Please upload .vtt files only.");
+        return;
+      }
+
+      try {
+        setUploading(true);
+        const res = await uploadVttFiles(vttFiles);
+        // Create processed sources from backend response
+        const newSources = (res?.files || vttFiles).map((f, idx) => ({
+          id: Date.now() + idx,
+          name: f.file || vttFiles[idx]?.name || `VTT ${idx + 1}`,
+          type: "text/vtt",
+          size: 0,
+          uploadedAt: new Date(),
+          status: "processed",
+          content: undefined,
+        }));
+        onAddSources(newSources);
+        onClose();
+      } catch (err) {
+        console.error("VTT upload failed", err);
+        alert(`Upload failed: ${err?.message || err}`);
+      } finally {
+        setUploading(false);
+      }
     },
-    [onAddSources, onClose],
-  )
+    [onAddSources, onClose]
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      "application/pdf": [".pdf"],
-      "text/plain": [".txt"],
-      "text/markdown": [".md"],
-      "audio/*": [".mp3", ".wav", ".m4a"],
-      "video/*": [".mp4", ".mov", ".avi"],
-      "image/*": [".png", ".jpg", ".jpeg", ".gif"],
-    },
+    accept: { "text/vtt": [".vtt"] },
     multiple: true,
-  })
+  });
 
   const handleAddUrl = () => {
     if (urlInput.trim()) {
@@ -52,12 +77,12 @@ export function AddSourcesModal({ isOpen, onClose, onAddSources }) {
         size: 0,
         uploadedAt: new Date(),
         status: "processing",
-      }
-      onAddSources([newSource])
-      setUrlInput("")
-      onClose()
+      };
+      onAddSources([newSource]);
+      setUrlInput("");
+      onClose();
     }
-  }
+  };
 
   const handleAddText = () => {
     if (textInput.trim()) {
@@ -69,14 +94,14 @@ export function AddSourcesModal({ isOpen, onClose, onAddSources }) {
         uploadedAt: new Date(),
         status: "processed",
         content: textInput,
-      }
-      onAddSources([newSource])
-      setTextInput("")
-      onClose()
+      };
+      onAddSources([newSource]);
+      setTextInput("");
+      onClose();
     }
-  }
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -87,7 +112,12 @@ export function AddSourcesModal({ isOpen, onClose, onAddSources }) {
             <Brain className="h-5 w-5 text-white" />
             <h2 className="text-white font-medium">NotebookLM</h2>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose} className="text-white hover:bg-white/10">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="text-white hover:bg-white/10"
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -95,12 +125,18 @@ export function AddSourcesModal({ isOpen, onClose, onAddSources }) {
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
           <h3 className="text-white text-lg mb-2">Add sources</h3>
           <p className="text-white/60 text-sm mb-6">
-            Sources let NotebookLM base its responses on the information that matters most to you.
+            Sources let NotebookLM base its responses on the information that
+            matters most to you.
             <br />
-            (Examples: marketing plans, course reading, research notes, meeting transcripts, sales documents, etc.)
+            (Examples: marketing plans, course reading, research notes, meeting
+            transcripts, sales documents, etc.)
           </p>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-4 bg-gray-800">
               <TabsTrigger value="upload" className="text-white">
                 Upload
@@ -120,25 +156,40 @@ export function AddSourcesModal({ isOpen, onClose, onAddSources }) {
               <div
                 {...getRootProps()}
                 className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                  isDragActive ? "border-blue-400 bg-blue-400/10" : "border-gray-600 hover:border-gray-500"
+                  isDragActive
+                    ? "border-blue-400 bg-blue-400/10"
+                    : "border-gray-600 hover:border-gray-500"
                 }`}
               >
-                <input {...getInputProps()} />
+                <input {...getInputProps()} disabled={uploading} />
                 <Upload className="h-8 w-8 text-blue-400 mx-auto mb-4" />
-                <h4 className="text-white mb-2">{isDragActive ? "Drop files here" : "Upload sources"}</h4>
+                <h4 className="text-white mb-2">
+                  {isDragActive
+                    ? "Drop .vtt files here"
+                    : "Upload .vtt transcript files"}
+                </h4>
                 <p className="text-white/60 text-sm mb-4">
-                  Drag and drop or <span className="text-blue-400 cursor-pointer">choose file</span> to upload
+                  Drag and drop or{" "}
+                  <span className="text-blue-400 cursor-pointer">
+                    choose file
+                  </span>{" "}
+                  to upload
                 </p>
                 <p className="text-white/40 text-xs">
-                  Supported file types: PDF, txt, Markdown, Audio (e.g. mp3), Video, Images
+                  Supported: .vtt (WebVTT captions)
                 </p>
+                {uploading && (
+                  <p className="text-white/60 text-xs mt-2">Uploading...</p>
+                )}
               </div>
             </TabsContent>
 
             <TabsContent value="link" className="mt-6">
               <div className="space-y-4">
                 <div>
-                  <label className="text-white text-sm mb-2 block">Website URL or YouTube link</label>
+                  <label className="text-white text-sm mb-2 block">
+                    Website URL or YouTube link
+                  </label>
                   <div className="flex gap-2">
                     <Input
                       value={urlInput}
@@ -152,7 +203,8 @@ export function AddSourcesModal({ isOpen, onClose, onAddSources }) {
                   </div>
                 </div>
                 <p className="text-white/40 text-xs">
-                  We'll extract the content from the webpage or YouTube video transcript.
+                  We'll extract the content from the webpage or YouTube video
+                  transcript.
                 </p>
               </div>
             </TabsContent>
@@ -160,7 +212,9 @@ export function AddSourcesModal({ isOpen, onClose, onAddSources }) {
             <TabsContent value="text" className="mt-6">
               <div className="space-y-4">
                 <div>
-                  <label className="text-white text-sm mb-2 block">Paste your text</label>
+                  <label className="text-white text-sm mb-2 block">
+                    Paste your text
+                  </label>
                   <Textarea
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
@@ -168,7 +222,11 @@ export function AddSourcesModal({ isOpen, onClose, onAddSources }) {
                     className="min-h-[200px] bg-gray-800 border-gray-600 text-white"
                   />
                 </div>
-                <Button onClick={handleAddText} disabled={!textInput.trim()} className="w-full">
+                <Button
+                  onClick={handleAddText}
+                  disabled={!textInput.trim()}
+                  className="w-full"
+                >
                   Add Text Source
                 </Button>
               </div>
@@ -224,5 +282,5 @@ export function AddSourcesModal({ isOpen, onClose, onAddSources }) {
         </div>
       </Card>
     </div>
-  )
+  );
 }

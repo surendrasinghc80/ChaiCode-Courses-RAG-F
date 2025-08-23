@@ -20,9 +20,13 @@ import {
   Search,
   Zap,
   AlertCircle,
+  Volume2,
+  Square,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RAGService } from "@/lib/rag-service";
+import { askQuestion } from "@/lib/api";
+import CodeBlock from "@/components/code-block";
 
 const TypingIndicator = ({ stage = "thinking" }) => {
   const stages = {
@@ -65,7 +69,52 @@ const TypingIndicator = ({ stage = "thinking" }) => {
   );
 };
 
-const MessageBubble = ({ message, onCopy, onRegenerate, onFeedback }) => {
+// Parses content for fenced code blocks ```lang\ncode\n```
+function renderMessageContent(content) {
+  if (!content) return null;
+  const parts = [];
+  const regex = /```([\w+-]*)\n([\s\S]*?)```/g;
+  let lastIndex = 0;
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    const [full, langRaw, code] = match;
+    const lang = langRaw || "";
+    if (match.index > lastIndex) {
+      const text = content.slice(lastIndex, match.index);
+      parts.push(
+        <p key={`t-${lastIndex}`} className="whitespace-pre-wrap">
+          {text}
+        </p>
+      );
+    }
+    parts.push(
+      <CodeBlock
+        key={`c-${match.index}`}
+        language={lang || undefined}
+        value={code}
+      />
+    );
+    lastIndex = match.index + full.length;
+  }
+  if (lastIndex < content.length) {
+    const tail = content.slice(lastIndex);
+    parts.push(
+      <p key={`t-${lastIndex}-end`} className="whitespace-pre-wrap">
+        {tail}
+      </p>
+    );
+  }
+  return <div className="prose prose-sm max-w-none">{parts}</div>;
+}
+
+const MessageBubble = ({
+  message,
+  onCopy,
+  onRegenerate,
+  onFeedback,
+  onSpeak,
+  isSpeaking,
+}) => {
   const isUser = message.role === "user";
 
   return (
@@ -89,9 +138,7 @@ const MessageBubble = ({ message, onCopy, onRegenerate, onFeedback }) => {
               : "bg-white/10 border-white/20 text-white"
           )}
         >
-          <div className="prose prose-sm max-w-none">
-            <p className="whitespace-pre-wrap">{message.content}</p>
-          </div>
+          {renderMessageContent(message.content)}
 
           {/* RAG Context Info */}
           {message.ragInfo && !isUser && (
@@ -147,6 +194,20 @@ const MessageBubble = ({ message, onCopy, onRegenerate, onFeedback }) => {
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => onSpeak(message)}
+              className="h-6 px-2 text-white/60 hover:text-white hover:bg-white/10"
+              aria-label={isSpeaking ? "Stop audio" : "Play audio"}
+              title={isSpeaking ? "Stop" : "Listen"}
+            >
+              {isSpeaking ? (
+                <Square className="h-3 w-3" />
+              ) : (
+                <Volume2 className="h-3 w-3" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => onRegenerate(message.id)}
               className="h-6 px-2 text-white/60 hover:text-white hover:bg-white/10"
             >
@@ -191,6 +252,9 @@ export function ChatInterface({ sources, onSendMessage }) {
   const [ragService, setRagService] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  // TTS state
+  const [speakingId, setSpeakingId] = useState(null);
+  const ttsUtteranceRef = useRef(null);
 
   // Initialize RAG service when sources change
   useEffect(() => {
@@ -209,8 +273,19 @@ export function ChatInterface({ sources, onSendMessage }) {
     scrollToBottom();
   }, [messages, isTyping]);
 
+  // Stop speech on unmount
+  useEffect(() => {
+    return () => {
+      try {
+        if (typeof window !== "undefined" && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+        }
+      } catch {}
+    };
+  }, []);
+
   const handleSend = async () => {
-    if (!inputValue.trim() || sources.length === 0 || !ragService) return;
+    if (!inputValue.trim() || sources.length === 0) return;
 
     const userMessage = {
       id: Date.now(),
@@ -226,37 +301,24 @@ export function ChatInterface({ sources, onSendMessage }) {
     setTypingStage("thinking");
 
     try {
-      // Simulate RAG pipeline stages
-      setTimeout(() => setTypingStage("searching"), 800);
+      setTimeout(() => setTypingStage("searching"), 400);
+      setTypingStage("generating");
 
-      setTimeout(async () => {
-        setTypingStage("generating");
+      const backend = await askQuestion(currentQuery);
 
-        // Get context from RAG service
-        const context = ragService.getContext(currentQuery);
+      const aiMessage = {
+        id: Date.now() + 1,
+        role: "assistant",
+        content: backend.answer || "No answer returned.",
+        timestamp: new Date(),
+        sources: (backend.references || []).map((r) => ({
+          name: `${r.file} • ${r.section} • ${r.start} → ${r.end}`,
+        })),
+        ragInfo: undefined,
+      };
 
-        // Generate response
-        const response = await ragService.generateResponse(
-          currentQuery,
-          context
-        );
-
-        const aiMessage = {
-          id: Date.now() + 1,
-          role: "assistant",
-          content: response.content,
-          timestamp: new Date(),
-          sources: response.sources,
-          ragInfo: {
-            usedChunks: response.usedChunks,
-            confidence: response.confidence,
-            sources: response.sources,
-          },
-        };
-
-        setMessages((prev) => [...prev, aiMessage]);
-        setIsTyping(false);
-      }, 1600);
+      setMessages((prev) => [...prev, aiMessage]);
+      setIsTyping(false);
     } catch (error) {
       console.error("Error generating response:", error);
 
@@ -308,35 +370,25 @@ export function ChatInterface({ sources, onSendMessage }) {
       setTimeout(async () => {
         setTypingStage("generating");
 
-        if (ragService) {
-          const context = ragService.getContext(userMessage.content);
-          const response = await ragService.generateResponse(
-            userMessage.content,
-            context
-          );
+        const backend = await askQuestion(userMessage.content);
+        const newAiMessage = {
+          id: Date.now(),
+          role: "assistant",
+          content: backend.answer || "No answer returned.",
+          timestamp: new Date(),
+          sources: (backend.references || []).map((r) => ({
+            name: `${r.file} • ${r.section} • ${r.start} → ${r.end}`,
+          })),
+        };
 
-          const newAiMessage = {
-            id: Date.now(),
-            role: "assistant",
-            content: response.content,
-            timestamp: new Date(),
-            sources: response.sources,
-            ragInfo: {
-              usedChunks: response.usedChunks,
-              confidence: response.confidence,
-              sources: response.sources,
-            },
-          };
-
-          setMessages((prev) => {
-            const newMessages = [...prev];
-            newMessages[messageIndex] = newAiMessage;
-            return newMessages;
-          });
-        }
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          newMessages[messageIndex] = newAiMessage;
+          return newMessages;
+        });
 
         setIsTyping(false);
-      }, 1200);
+      }, 800);
     }
   };
 
@@ -346,10 +398,54 @@ export function ChatInterface({ sources, onSendMessage }) {
     // Could send to analytics or improve model
   };
 
+  // --- Text-to-Speech Helpers ---
+  const sanitizeForSpeech = (text) => {
+    if (!text) return "";
+    const withoutFences = text.replace(/```[\s\S]*?```/g, "");
+    return withoutFences.replace(/\n{2,}/g, ". ").trim();
+  };
+
+  const stopSpeaking = () => {
+    try {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    } catch {}
+    ttsUtteranceRef.current = null;
+    setSpeakingId(null);
+  };
+
+  const handleSpeak = (message) => {
+    // Toggle behavior
+    if (speakingId === message.id) {
+      stopSpeaking();
+      return;
+    }
+
+    // Stop any current
+    stopSpeaking();
+
+    try {
+      if (typeof window === "undefined" || !window.speechSynthesis) return;
+      const utter = new SpeechSynthesisUtterance(
+        sanitizeForSpeech(message.content)
+      );
+      utter.rate = 1; // normal speed
+      utter.pitch = 1; // normal pitch
+      utter.onend = () => setSpeakingId(null);
+      utter.onerror = () => setSpeakingId(null);
+      ttsUtteranceRef.current = utter;
+      setSpeakingId(message.id);
+      window.speechSynthesis.speak(utter);
+    } catch (e) {
+      // noop
+    }
+  };
+
   const hasMessages = messages.length > 0;
   const canSendMessage = sources.length > 0 && inputValue.trim() && !isTyping;
   const processedSources = sources.filter((s) => s.status === "processed");
-  const ragStats = ragService?.getStats();
+  const ragStats = ragService?.getStats?.();
 
   return (
     <div className="flex-1 bg-black/10 backdrop-blur-sm flex flex-col">
@@ -471,6 +567,8 @@ export function ChatInterface({ sources, onSendMessage }) {
                 onCopy={handleCopy}
                 onRegenerate={handleRegenerate}
                 onFeedback={handleFeedback}
+                onSpeak={handleSpeak}
+                isSpeaking={speakingId === message.id}
               />
             ))}
             {isTyping && <TypingIndicator stage={typingStage} />}
