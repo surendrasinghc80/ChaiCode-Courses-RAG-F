@@ -19,6 +19,8 @@ import {
   Upload,
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
+import { uploadVttFiles } from "@/lib/api";
+import { useVttFiles } from "@/contexts/VttFilesContext";
 import { SourceSearch } from "./source-search";
 import { SourcePreviewModal } from "./source-preview-modal";
 
@@ -44,77 +46,84 @@ export function SourcesPanel({
   sources,
   onAddSources,
   onDeleteSource,
-  onShowAddModal,
+  // onShowAddModal,
 }) {
   const [uploadProgress, setUploadProgress] = useState({});
   const [selectedSource, setSelectedSource] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+  const [uploading, setUploading] = useState(false);
+
+  // Use VTT files context
+  const {
+    files: vttFiles,
+    addFiles,
+    deleteFile,
+    setLoading,
+    setError,
+    formatFileSize,
+    getTotalFiles,
+    getTotalSize,
+  } = useVttFiles();
 
   const onDrop = useCallback(
-    (acceptedFiles) => {
-      acceptedFiles.forEach((file) => {
-        // Simulate upload and processing
-        const fileId = Date.now() + Math.random();
-        setUploadProgress((prev) => ({ ...prev, [fileId]: 0 }));
+    async (acceptedFiles) => {
+      const vttFiles = acceptedFiles.filter(
+        (f) => f.type === "text/vtt" || f.name?.toLowerCase().endsWith(".vtt")
+      );
 
-        const interval = setInterval(() => {
-          setUploadProgress((prev) => {
-            const currentProgress = prev[fileId] || 0;
-            if (currentProgress >= 100) {
-              clearInterval(interval);
+      if (vttFiles.length === 0) {
+        alert("Please upload .vtt files only.");
+        return;
+      }
 
-              // Simulate content extraction based on file type
-              let extractedContent = "";
-              if (file.type === "text/plain") {
-                // For text files, we'd read the actual content
-                extractedContent = "Sample text content extracted from file...";
-              } else if (file.type.includes("pdf")) {
-                extractedContent =
-                  "Sample PDF content extracted using PDF processing...";
-              }
+      try {
+        setUploading(true);
+        setLoading(true);
+        const res = await uploadVttFiles(vttFiles);
 
-              // Add to sources after processing complete
-              onAddSources([
-                {
-                  id: fileId,
-                  name: file.name,
-                  type: file.type,
-                  size: file.size,
-                  uploadedAt: new Date(),
-                  status: "processed",
-                  content: extractedContent,
-                  metadata: {
-                    wordCount: extractedContent.split(" ").length,
-                    processingTime: "2.3s",
-                    chunks: Math.ceil(extractedContent.length / 500),
-                  },
-                },
-              ]);
+        // Create processed sources from backend response
+        const newSources = (res?.files || vttFiles).map((f, idx) => ({
+          id: Date.now() + idx,
+          name: f.file || vttFiles[idx]?.name || `VTT ${idx + 1}`,
+          type: "text/vtt",
+          size: vttFiles[idx]?.size || 0,
+          uploadedAt: new Date(),
+          status: "processed",
+          content: undefined,
+          metadata: {
+            processingTime: "1.2s",
+            chunks: 1,
+          },
+        }));
 
-              // Remove from progress tracking
-              const newProgress = { ...prev };
-              delete newProgress[fileId];
-              return newProgress;
-            }
-            return { ...prev, [fileId]: currentProgress + 10 };
-          });
-        }, 200);
-      });
+        // Add to context
+        addFiles(
+          newSources.map((source) => ({
+            fileName: source.name,
+            fileSize: source.size,
+            uploadedDate: source.uploadedAt,
+            id: source.id,
+          }))
+        );
+
+        // Also add to sources for backward compatibility
+        onAddSources(newSources);
+      } catch (err) {
+        console.error("VTT upload failed", err);
+        setError(err?.message || err);
+        alert(`Upload failed: ${err?.message || err}`);
+      } finally {
+        setUploading(false);
+        setLoading(false);
+      }
     },
     [onAddSources]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      "application/pdf": [".pdf"],
-      "text/plain": [".txt"],
-      "text/markdown": [".md"],
-      "audio/*": [".mp3", ".wav", ".m4a"],
-      "video/*": [".mp4", ".mov", ".avi"],
-      "image/*": [".png", ".jpg", ".jpeg", ".gif"],
-    },
+    accept: { "text/vtt": [".vtt"] },
     multiple: true,
   });
 
@@ -140,7 +149,7 @@ export function SourcesPanel({
         <div className="p-4 border-b border-white/10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-white font-medium">Sources</h2>
-            <Button
+            {/* <Button
               variant="ghost"
               size="sm"
               onClick={onShowAddModal}
@@ -148,7 +157,7 @@ export function SourcesPanel({
             >
               <Plus className="h-4 w-4 mr-2" />
               Add
-            </Button>
+            </Button> */}
           </div>
         </div>
 
@@ -309,12 +318,20 @@ export function SourcesPanel({
                         <Upload className="h-8 w-8 text-white/40 mx-auto mb-3" />
                         <p className="text-white/60 text-sm mb-2">
                           {isDragActive
-                            ? "Drop files here..."
-                            : "Drag & drop files here"}
+                            ? "Drop .vtt files here..."
+                            : "Drag & drop .vtt files here"}
                         </p>
                         <p className="text-white/40 text-xs">
-                          PDF, TXT, MD, Audio, Video, Images
+                          or{" "}
+                          <span className="text-blue-400 cursor-pointer">
+                            browse .vtt files
+                          </span>
                         </p>
+                        {uploading && (
+                          <p className="text-white/60 text-xs mt-2">
+                            Uploading...
+                          </p>
+                        )}
                       </div>
 
                       <div className="mt-6 text-center">

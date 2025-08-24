@@ -26,6 +26,7 @@ import {
   Calendar,
 } from "lucide-react";
 // import { ThemeToggle } from "@/components/theme-toggle";
+import { AuthenticationApi } from "@/ApiConstants";
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -74,7 +75,7 @@ export default function SignupPage() {
         process.env.NEXT_PUBLIC_API_BASE_URL ||
         process.env.NEXT_PUBLIC_BACKEND_URL ||
         "";
-      const response = await fetch(`${BASE_URL}/signup`, {
+      const response = await fetch(`${BASE_URL}${AuthenticationApi.Register}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

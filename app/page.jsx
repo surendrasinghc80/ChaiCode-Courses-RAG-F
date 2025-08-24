@@ -2,17 +2,36 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Settings, Share, Grid3X3, X, Brain, Moon, Sun } from "lucide-react";
+import {
+  // Settings,
+  // Share,
+  LogOut,
+  Brain,
+  Moon,
+  Sun,
+} from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
+import { signOut, useSession } from "next-auth/react";
+import { VttFilesProvider } from "@/contexts/VttFilesContext";
 import { SourcesPanel } from "@/components/sources-panel";
 import { AddSourcesModal } from "@/components/add-sources-modal";
 import { ChatInterface } from "@/components/chat-interface";
-import { StudioPanel } from "@/components/studio-panel";
+// import { StudioPanel } from "@/components/studio-panel";
 
 export default function NotebookLM() {
   const [showAddSources, setShowAddSources] = useState(false);
   const [sources, setSources] = useState([]);
   const { theme, setTheme } = useTheme();
+  const { data: session } = useSession();
 
   // Background image rotation
   const images = useMemo(
@@ -92,7 +111,11 @@ export default function NotebookLM() {
       if (cycleTimeoutRef.current) clearTimeout(cycleTimeoutRef.current);
       if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
     };
-  }, [images, ROTATE_MS, FADE_MS]);
+  }, [images]);
+
+  const handleLogout = () => {
+    signOut();
+  };
 
   const handleAddSources = (newSources) => {
     setSources((prev) => [...prev, ...newSources]);
@@ -108,132 +131,138 @@ export default function NotebookLM() {
   };
 
   return (
-    <div className="min-h-screen relative">
-      {/* Backgrounds with crossfade */}
-      <div className="fixed inset-0 z-0">
-        {/* Current */}
-        <img
-          src={images[currentIndex]}
-          alt="Background current"
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
-            fading ? "opacity-0" : "opacity-100"
-          }`}
-          style={{
-            willChange: "opacity",
-            backfaceVisibility: "hidden",
-            transform: "translateZ(0)",
-          }}
-          loading="eager"
-          decoding="async"
-          fetchPriority="high"
-        />
-        {/* Next */}
-        <img
-          src={images[nextIndex]}
-          alt="Background next"
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
-            fading ? "opacity-100" : "opacity-0"
-          }`}
-          style={{
-            willChange: "opacity",
-            backfaceVisibility: "hidden",
-            transform: "translateZ(0)",
-          }}
-          decoding="async"
-          fetchPriority="low"
-          aria-hidden="true"
-          draggable={false}
-        />
-      </div>
-
-      <div className="fixed inset-0 z-10 bg-black/60 dark:bg-black/80" />
-
-      <div className="relative z-20 min-h-screen">
-        {/* Header */}
-        <header className="flex items-center justify-between p-4 border-b border-white/10">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Brain className="h-6 w-6 text-white" />
-              <span className="text-white font-medium">ChaiCode RAG</span>
-              <span className="text-white/60 font-light text-xs">
-                (Retrieval Augmented Generation)
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="text-white hover:bg-white/10"
-            >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/10"
-            >
-              <Share className="h-4 w-4 mr-2" />
-              Share
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/10"
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/10"
-            >
-              <Grid3X3 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/10"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </header>
-
-        {/* Three-panel layout */}
-        <div className="flex h-[calc(100vh-73px)]">
-          {/* Sources Panel */}
-          <SourcesPanel
-            sources={sources}
-            onAddSources={handleAddSources}
-            onDeleteSource={handleDeleteSource}
-            onShowAddModal={() => setShowAddSources(true)}
+    <VttFilesProvider>
+      <div className="min-h-screen relative">
+        {/* Backgrounds with crossfade */}
+        <div className="fixed inset-0 z-0">
+          {/* Current */}
+          <img
+            src={images[currentIndex]}
+            alt="Background current"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+              fading ? "opacity-0" : "opacity-100"
+            }`}
           />
-
-          {/* Chat Panel */}
-          <ChatInterface
-            sources={sources}
-            onSendMessage={handleSendMessage}
+          {/* Next (for crossfade) */}
+          <img
+            src={images[nextIndex]}
+            alt="Background next"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+              fading ? "opacity-100" : "opacity-0"
+            }`}
           />
-
-          {/* Studio Panel */}
-          <StudioPanel sources={sources} />
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-black/50" />
         </div>
-      </div>
 
-      {/* Add Sources Modal */}
-      <AddSourcesModal
-        isOpen={showAddSources}
-        onClose={() => setShowAddSources(false)}
-        onAddSources={handleAddSources}
-      />
-    </div>
+        {/* Main content */}
+        <div className="relative z-10 flex flex-col h-screen">
+          {/* Header */}
+          <header className="flex items-center justify-between p-4 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Brain className="h-6 w-6 text-white" />
+                <h1 className="text-white text-lg font-medium">NotebookLM</h1>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="text-white hover:bg-white/10"
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </Button>
+              {/* <Button
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/10"
+              >
+                <Share className="h-4 w-4 mr-2" />
+                Share
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/10"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Button> */}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="relative h-8 w-8 rounded-full"
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src="https://github.com/shadcn.png" />
+                      <AvatarFallback className="bg-white/20 text-white">
+                        {session?.user?.name?.charAt(0)?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  className="w-56 bg-gray-900 border-gray-700"
+                  align="end"
+                  forceMount
+                >
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none text-white">
+                        {session?.user?.name || "User"}
+                      </p>
+                      <p className="text-xs leading-none text-gray-400">
+                        {session?.user?.email || "No email"}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-gray-700" />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-white hover:bg-gray-800 cursor-pointer"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </header>
+
+          {/* Three-panel layout */}
+          <div className="flex h-[calc(100vh-73px)]">
+            {/* Sources Panel */}
+            <SourcesPanel
+              sources={sources}
+              onAddSources={handleAddSources}
+              onDeleteSource={handleDeleteSource}
+              onShowAddModal={() => setShowAddSources(true)}
+            />
+
+            {/* Chat Panel */}
+            <ChatInterface sources={sources} onSendMessage={handleSendMessage} />
+
+            {/* Studio Panel */}
+            {/* <StudioPanel sources={sources} /> */}
+          </div>
+        </div>
+
+        {/* Add Sources Modal */}
+        <AddSourcesModal
+          isOpen={showAddSources}
+          onClose={() => setShowAddSources(false)}
+          onAddSources={handleAddSources}
+        />
+      </div>
+    </VttFilesProvider>
   );
 }

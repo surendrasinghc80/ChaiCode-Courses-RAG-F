@@ -637,7 +637,7 @@ export function ChatInterface({ sources, onSendMessage }) {
       </div>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-white/10">
+      <div className="p-4 border-t border-white/10 ">
         <div className="flex items-end gap-2">
           <div className="flex-1">
             <textarea
@@ -651,7 +651,7 @@ export function ChatInterface({ sources, onSendMessage }) {
                   : "Ask questions about your sources..."
               }
               className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 resize-none min-h-[44px] max-h-32"
-              disabled={processedSources.length === 0}
+              disabled={false}
               rows={1}
               style={{
                 height: "auto",
@@ -668,7 +668,7 @@ export function ChatInterface({ sources, onSendMessage }) {
             size="sm"
             onClick={handleSend}
             disabled={!canSendMessage}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 h-11 px-4"
+            className="bg-blue-600 hover:bg-blue-700 mb-2 disabled:bg-gray-600 h-11 px-4"
           >
             <Send className="h-4 w-4" />
           </Button>
