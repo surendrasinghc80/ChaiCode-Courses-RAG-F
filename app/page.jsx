@@ -7,7 +7,7 @@ import { useTheme } from "next-themes";
 import { SourcesPanel } from "@/components/sources-panel";
 import { AddSourcesModal } from "@/components/add-sources-modal";
 import { ChatInterface } from "@/components/chat-interface";
-// import { StudioPanel } from "@/components/studio-panel";
+import { StudioPanel } from "@/components/studio-panel";
 
 export default function NotebookLM() {
   const [showAddSources, setShowAddSources] = useState(false);
@@ -218,10 +218,13 @@ export default function NotebookLM() {
           />
 
           {/* Chat Panel */}
-          <ChatInterface sources={sources} onSendMessage={handleSendMessage} />
+          <ChatInterface
+            sources={sources}
+            onSendMessage={handleSendMessage}
+          />
 
           {/* Studio Panel */}
-          {/* <StudioPanel sources={sources} /> */}
+          <StudioPanel sources={sources} />
         </div>
       </div>
 
