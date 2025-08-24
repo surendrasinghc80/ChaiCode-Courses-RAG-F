@@ -206,6 +206,42 @@ export function SourcesPanel({
                     </div>
                   ))}
 
+                  {/* Upload More Files Section */}
+                  <div className="mb-4">
+                    <div
+                      {...getRootProps()}
+                      className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                        uploading
+                          ? "border-white/10 bg-white/5 cursor-not-allowed opacity-60"
+                          : isDragActive
+                          ? "border-blue-400 bg-blue-400/10 cursor-pointer"
+                          : "border-white/20 hover:border-white/30 cursor-pointer"
+                      }`}
+                    >
+                      <input {...getInputProps()} />
+                      <div className="flex flex-col items-center gap-2">
+                        <Upload className="h-6 w-6 text-white/40" />
+                        <div className="text-white/60 text-sm">
+                          {uploading ? (
+                            <>
+                              <p className="font-medium">Uploading files...</p>
+                              <p className="text-xs">Please wait...</p>
+                            </>
+                          ) : isDragActive ? (
+                            <p className="font-medium">Drop files here</p>
+                          ) : (
+                            <>
+                              <p className="font-medium">Add more sources</p>
+                              <p className="text-xs">
+                                Drop files here or click to browse
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Status Summary */}
                   {sources.length > 0 && (
                     <div className="mb-4 flex gap-2">

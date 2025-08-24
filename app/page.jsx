@@ -152,53 +152,53 @@ function NotebookLMContent() {
 
   return (
     <div className="min-h-screen relative">
-        {/* Backgrounds with crossfade */}
-        <div className="fixed inset-0 z-0">
-          {/* Current */}
-          <img
-            src={images[currentIndex]}
-            alt="Background current"
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
-              fading ? "opacity-0" : "opacity-100"
-            }`}
-          />
-          {/* Next (for crossfade) */}
-          <img
-            src={images[nextIndex]}
-            alt="Background next"
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
-              fading ? "opacity-100" : "opacity-0"
-            }`}
-          />
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-black/50" />
-        </div>
+      {/* Backgrounds with crossfade */}
+      <div className="fixed inset-0 z-0">
+        {/* Current */}
+        <img
+          src={images[currentIndex]}
+          alt="Background current"
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+            fading ? "opacity-0" : "opacity-100"
+          }`}
+        />
+        {/* Next (for crossfade) */}
+        <img
+          src={images[nextIndex]}
+          alt="Background next"
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+            fading ? "opacity-100" : "opacity-0"
+          }`}
+        />
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black/50" />
+      </div>
 
-        {/* Main content */}
-        <div className="relative z-10 flex flex-col h-screen">
-          {/* Header */}
-          <header className="flex items-center justify-between p-4 border-b border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Brain className="h-6 w-6 text-white" />
-                <h1 className="text-white text-lg font-medium">NotebookLM</h1>
-              </div>
-            </div>
-
+      {/* Main content */}
+      <div className="relative z-10 flex flex-col h-screen">
+        {/* Header */}
+        <header className="flex items-center justify-between p-4 border-b border-white/10">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="text-white hover:bg-white/10"
-              >
-                {theme === "dark" ? (
-                  <Sun className="h-4 w-4" />
-                ) : (
-                  <Moon className="h-4 w-4" />
-                )}
-              </Button>
-              {/* <Button
+              <img src="/icon.svg" alt="ChaiCode RAG" className="h-8 w-8" />
+              <h1 className="text-white text-lg font-medium">ChaiCode RAG</h1>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="text-white hover:bg-white/10"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
+            {/* <Button
                 variant="ghost"
                 size="sm"
                 className="text-white hover:bg-white/10"
@@ -215,73 +215,73 @@ function NotebookLMContent() {
                 Settings
               </Button> */}
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="relative h-8 w-8 rounded-full"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="https://github.com/shadcn.png" />
-                      <AvatarFallback className="bg-white/20 text-white">
-                        {session?.user?.name?.charAt(0)?.toUpperCase() || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="w-56 bg-gray-900 border-gray-700"
-                  align="end"
-                  forceMount
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="relative h-8 w-8 rounded-full"
                 >
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none text-white">
-                        {session?.user?.name || "User"}
-                      </p>
-                      <p className="text-xs leading-none text-gray-400">
-                        {session?.user?.email || "No email"}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-gray-700" />
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    className="text-white hover:bg-gray-800 cursor-pointer"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </header>
-
-          {/* Three-panel layout */}
-          <div className="flex h-[calc(100vh-73px)]">
-            {/* Sources Panel */}
-            <SourcesPanel
-              sources={sources}
-              onAddSources={handleAddSources}
-              onDeleteSource={handleDeleteSource}
-              onShowAddModal={() => setShowAddSources(true)}
-            />
-
-            {/* Chat Panel */}
-            <ChatInterface sources={sources} onSendMessage={handleSendMessage} />
-
-            {/* Studio Panel */}
-            {/* <StudioPanel sources={sources} /> */}
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src="https://github.com/shadcn.png" />
+                    <AvatarFallback className="bg-white/20 text-white">
+                      {session?.user?.name?.charAt(0)?.toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-56 bg-gray-900 border-gray-700"
+                align="end"
+                forceMount
+              >
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none text-white">
+                      {session?.user?.name || "User"}
+                    </p>
+                    <p className="text-xs leading-none text-gray-400">
+                      {session?.user?.email || "No email"}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-white hover:bg-gray-800 cursor-pointer"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </div>
+        </header>
 
-        {/* Add Sources Modal */}
-        <AddSourcesModal
-          isOpen={showAddSources}
-          onClose={() => setShowAddSources(false)}
-          onAddSources={handleAddSources}
-        />
+        {/* Three-panel layout */}
+        <div className="flex h-[calc(100vh-73px)]">
+          {/* Sources Panel */}
+          <SourcesPanel
+            sources={sources}
+            onAddSources={handleAddSources}
+            onDeleteSource={handleDeleteSource}
+            onShowAddModal={() => setShowAddSources(true)}
+          />
+
+          {/* Chat Panel */}
+          <ChatInterface sources={sources} onSendMessage={handleSendMessage} />
+
+          {/* Studio Panel */}
+          {/* <StudioPanel sources={sources} /> */}
+        </div>
       </div>
+
+      {/* Add Sources Modal */}
+      <AddSourcesModal
+        isOpen={showAddSources}
+        onClose={() => setShowAddSources(false)}
+        onAddSources={handleAddSources}
+      />
+    </div>
   );
 }
 
