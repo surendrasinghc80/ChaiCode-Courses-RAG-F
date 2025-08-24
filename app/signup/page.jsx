@@ -71,39 +71,35 @@ export default function SignupPage() {
 
     // Call backend signup API
     try {
+      const axios = (await import("axios")).default;
       const BASE_URL =
         process.env.NEXT_PUBLIC_API_BASE_URL ||
         process.env.NEXT_PUBLIC_BACKEND_URL ||
         "";
-      const response = await fetch(`${BASE_URL}${AuthenticationApi.Register}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-          age: parseInt(formData.age),
-          city: formData.city,
-        }),
+      
+      const response = await axios.post(`${BASE_URL}${AuthenticationApi.Register}`, {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        age: parseInt(formData.age),
+        city: formData.city,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Signup failed");
+      if (response.data.success) {
+        setSuccess(true);
+        // Redirect to login after 2 seconds
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+      } else {
+        setError(response.data.message || "Registration failed");
       }
-
-      const data = await response.json();
-      console.log("Signup successful:", data);
-      setSuccess(true);
-
-      // Redirect after success
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 2000);
-    } catch (err) {
-      setError(err.message || "Something went wrong. Please try again.");
+    } catch (error) {
+      if (error.response) {
+        setError(error.response.data?.message || "Registration failed");
+      } else {
+        setError("Network error. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }

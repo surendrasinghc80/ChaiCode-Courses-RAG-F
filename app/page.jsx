@@ -21,17 +21,37 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
 import { signOut, useSession } from "next-auth/react";
-import { VttFilesProvider } from "@/contexts/VttFilesContext";
+import { VttFilesProvider, useVttFiles } from "@/contexts/VttFilesContext";
 import { SourcesPanel } from "@/components/sources-panel";
 import { AddSourcesModal } from "@/components/add-sources-modal";
 import { ChatInterface } from "@/components/chat-interface";
 // import { StudioPanel } from "@/components/studio-panel";
 
-export default function NotebookLM() {
+function NotebookLMContent() {
   const [showAddSources, setShowAddSources] = useState(false);
   const [sources, setSources] = useState([]);
   const { theme, setTheme } = useTheme();
   const { data: session } = useSession();
+  const { files: vttFiles } = useVttFiles();
+
+  // Sync VTT files with sources state on mount and when vttFiles change
+  useEffect(() => {
+    if (vttFiles.length > 0) {
+      const vttSources = vttFiles.map((file) => ({
+        id: file.id,
+        name: file.fileName,
+        type: "text/vtt",
+        size: file.fileSize,
+        uploadedAt: new Date(file.uploadedDate),
+        status: "processed",
+        metadata: {
+          processingTime: "1.2s",
+          chunks: 1,
+        },
+      }));
+      setSources(vttSources);
+    }
+  }, [vttFiles]);
 
   // Background image rotation
   const images = useMemo(
@@ -131,8 +151,7 @@ export default function NotebookLM() {
   };
 
   return (
-    <VttFilesProvider>
-      <div className="min-h-screen relative">
+    <div className="min-h-screen relative">
         {/* Backgrounds with crossfade */}
         <div className="fixed inset-0 z-0">
           {/* Current */}
@@ -263,6 +282,13 @@ export default function NotebookLM() {
           onAddSources={handleAddSources}
         />
       </div>
+  );
+}
+
+export default function NotebookLM() {
+  return (
+    <VttFilesProvider>
+      <NotebookLMContent />
     </VttFilesProvider>
   );
 }

@@ -26,6 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import { RAGService } from "@/lib/rag-service";
 import { askQuestion } from "@/lib/api";
+import { useVttFiles } from "@/contexts/VttFilesContext";
 import CodeBlock from "@/components/code-block";
 
 const TypingIndicator = ({ stage = "thinking" }) => {
@@ -247,6 +248,7 @@ const MessageBubble = ({
 export function ChatInterface({ sources, onSendMessage }) {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
+  const { chats, addChat } = useVttFiles();
   const [isTyping, setIsTyping] = useState(false);
   const [typingStage, setTypingStage] = useState("thinking");
   const [ragService, setRagService] = useState(null);
@@ -276,6 +278,22 @@ export function ChatInterface({ sources, onSendMessage }) {
     scrollToBottom();
   }, [messages, isTyping]);
 
+  useEffect(() => {
+    if (chats.length > 0) {
+      // Convert VTT context chats to message format
+      const convertedMessages = chats.map((chat) => ({
+        id: chat.id,
+        role: chat.role,
+        content: chat.message, // Convert 'message' field to 'content'
+        timestamp: chat.timestamp,
+        sources: chat.sources || [],
+        ragInfo: chat.ragInfo,
+        error: chat.error,
+      }));
+      setMessages(convertedMessages);
+    }
+  }, [chats]);
+
   // Stop speech on unmount
   useEffect(() => {
     return () => {
@@ -288,7 +306,7 @@ export function ChatInterface({ sources, onSendMessage }) {
   }, []);
 
   const handleSend = async () => {
-    if (!inputValue.trim() || sources.length === 0) return;
+    if (!inputValue.trim()) return;
 
     const userMessage = {
       id: Date.now(),
@@ -298,6 +316,9 @@ export function ChatInterface({ sources, onSendMessage }) {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    // Store user message in VTT context
+    addChat(userMessage.content, "user", { timestamp: userMessage.timestamp });
+
     const currentQuery = inputValue;
     setInputValue("");
     setIsTyping(true);
@@ -317,10 +338,21 @@ export function ChatInterface({ sources, onSendMessage }) {
         sources: (backend.references || []).map((r) => ({
           name: `${r.file} • ${r.section} • ${r.start} → ${r.end}`,
         })),
-        ragInfo: undefined,
+        ragInfo: backend.references
+          ? {
+              usedChunks: backend.references.length,
+              sources: backend.references,
+              confidence: backend.references[0]?.score,
+            }
+          : undefined,
       };
 
       setMessages((prev) => [...prev, aiMessage]);
+      // Store AI message in VTT context
+      addChat(aiMessage.content, "assistant", {
+        timestamp: aiMessage.timestamp,
+        sources: aiMessage.sources,
+      });
       setIsTyping(false);
     } catch (error) {
       console.error("Error generating response:", error);
@@ -336,6 +368,11 @@ export function ChatInterface({ sources, onSendMessage }) {
       };
 
       setMessages((prev) => [...prev, errorMessage]);
+      // Store error message in VTT context
+      addChat(errorMessage.content, "assistant", {
+        timestamp: errorMessage.timestamp,
+        error: true,
+      });
       setIsTyping(false);
     }
 
@@ -382,12 +419,26 @@ export function ChatInterface({ sources, onSendMessage }) {
           sources: (backend.references || []).map((r) => ({
             name: `${r.file} • ${r.section} • ${r.start} → ${r.end}`,
           })),
+          ragInfo: backend.references
+            ? {
+                usedChunks: backend.references.length,
+                sources: backend.references,
+                confidence: backend.references[0]?.score,
+              }
+            : undefined,
         };
 
         setMessages((prev) => {
           const newMessages = [...prev];
           newMessages[messageIndex] = newAiMessage;
           return newMessages;
+        });
+
+        // Store regenerated message in VTT context
+        addChat(newAiMessage.content, "assistant", {
+          timestamp: newAiMessage.timestamp,
+          sources: newAiMessage.sources,
+          regenerated: true,
         });
 
         setIsTyping(false);

@@ -1,10 +1,11 @@
 "use client";
 
-import { createContext, useContext, useReducer } from "react";
+import { createContext, useContext, useReducer, useEffect } from "react";
 
 // Initial state
 const initialState = {
   files: [],
+  chats: [],
   isLoading: false,
   error: null,
 };
@@ -17,6 +18,9 @@ const VTT_ACTIONS = {
   SET_ERROR: "SET_ERROR",
   CLEAR_ERROR: "CLEAR_ERROR",
   CLEAR_ALL_FILES: "CLEAR_ALL_FILES",
+  ADD_CHAT: "ADD_CHAT",
+  CLEAR_CHATS: "CLEAR_CHATS",
+  LOAD_FROM_STORAGE: "LOAD_FROM_STORAGE",
 };
 
 // Reducer function
@@ -69,6 +73,32 @@ function vttFilesReducer(state, action) {
         files: [],
       };
 
+    case VTT_ACTIONS.ADD_CHAT:
+      const newChat = {
+        id: Date.now() + Math.random(),
+        message: action.payload.message,
+        role: action.payload.role,
+        timestamp: new Date(),
+        ...action.payload,
+      };
+      return {
+        ...state,
+        chats: [...state.chats, newChat],
+      };
+
+    case VTT_ACTIONS.CLEAR_CHATS:
+      return {
+        ...state,
+        chats: [],
+      };
+
+    case VTT_ACTIONS.LOAD_FROM_STORAGE:
+      return {
+        ...state,
+        files: action.payload.files || [],
+        chats: action.payload.chats || [],
+      };
+
     default:
       return state;
   }
@@ -80,6 +110,45 @@ const VttFilesContext = createContext();
 // Provider component
 export function VttFilesProvider({ children }) {
   const [state, dispatch] = useReducer(vttFilesReducer, initialState);
+
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const loadFromStorage = () => {
+      try {
+        const storedFiles = localStorage.getItem('vtt-files');
+        const storedChats = localStorage.getItem('vtt-chats');
+        
+        dispatch({
+          type: VTT_ACTIONS.LOAD_FROM_STORAGE,
+          payload: {
+            files: storedFiles ? JSON.parse(storedFiles) : [],
+            chats: storedChats ? JSON.parse(storedChats) : [],
+          },
+        });
+      } catch (error) {
+        console.error('Failed to load from storage:', error);
+      }
+    };
+
+    loadFromStorage();
+  }, []);
+
+  // Save to localStorage whenever files or chats change
+  useEffect(() => {
+    try {
+      localStorage.setItem('vtt-files', JSON.stringify(state.files));
+    } catch (error) {
+      console.error('Failed to save files to storage:', error);
+    }
+  }, [state.files]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('vtt-chats', JSON.stringify(state.chats));
+    } catch (error) {
+      console.error('Failed to save chats to storage:', error);
+    }
+  }, [state.chats]);
 
   // Actions
   const addFiles = (files) => {
@@ -104,6 +173,17 @@ export function VttFilesProvider({ children }) {
 
   const clearAllFiles = () => {
     dispatch({ type: VTT_ACTIONS.CLEAR_ALL_FILES });
+  };
+
+  const addChat = (message, role, metadata = {}) => {
+    dispatch({
+      type: VTT_ACTIONS.ADD_CHAT,
+      payload: { message, role, ...metadata },
+    });
+  };
+
+  const clearChats = () => {
+    dispatch({ type: VTT_ACTIONS.CLEAR_CHATS });
   };
 
   // Helper functions
@@ -132,6 +212,7 @@ export function VttFilesProvider({ children }) {
   const value = {
     // State
     files: state.files,
+    chats: state.chats,
     isLoading: state.isLoading,
     error: state.error,
     
@@ -142,6 +223,8 @@ export function VttFilesProvider({ children }) {
     setError,
     clearError,
     clearAllFiles,
+    addChat,
+    clearChats,
     
     // Helper functions
     getFileById,

@@ -125,6 +125,7 @@ export function SourcesPanel({
     onDrop,
     accept: { "text/vtt": [".vtt"] },
     multiple: true,
+    disabled: uploading,
   });
 
   const handleSourceSelect = (source) => {
@@ -308,28 +309,42 @@ export function SourcesPanel({
                       {/* Drop Zone */}
                       <div
                         {...getRootProps()}
-                        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                          isDragActive
-                            ? "border-blue-400 bg-blue-400/10"
-                            : "border-white/20 hover:border-white/30"
+                        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                          uploading
+                            ? "border-white/10 bg-white/5 cursor-not-allowed opacity-60"
+                            : isDragActive
+                            ? "border-blue-400 bg-blue-400/10 cursor-pointer"
+                            : "border-white/20 hover:border-white/30 cursor-pointer"
                         }`}
                       >
                         <input {...getInputProps()} />
-                        <Upload className="h-8 w-8 text-white/40 mx-auto mb-3" />
-                        <p className="text-white/60 text-sm mb-2">
-                          {isDragActive
+                        <Upload
+                          className={`h-8 w-8 mx-auto mb-3 ${
+                            uploading ? "text-white/20" : "text-white/40"
+                          }`}
+                        />
+                        <p
+                          className={`text-sm mb-2 ${
+                            uploading ? "text-white/30" : "text-white/60"
+                          }`}
+                        >
+                          {uploading
+                            ? "Uploading files..."
+                            : isDragActive
                             ? "Drop .vtt files here..."
                             : "Drag & drop .vtt files here"}
                         </p>
-                        <p className="text-white/40 text-xs">
-                          or{" "}
-                          <span className="text-blue-400 cursor-pointer">
-                            browse .vtt files
-                          </span>
-                        </p>
+                        {!uploading && (
+                          <p className="text-white/40 text-xs">
+                            or{" "}
+                            <span className="text-blue-400 cursor-pointer">
+                              browse .vtt files
+                            </span>
+                          </p>
+                        )}
                         {uploading && (
-                          <p className="text-white/60 text-xs mt-2">
-                            Uploading...
+                          <p className="text-white/40 text-xs mt-2">
+                            Please wait while files are being processed...
                           </p>
                         )}
                       </div>
