@@ -206,7 +206,7 @@ export function SourcesPanel({
                     </div>
                   ))}
 
-                  {/* Upload More Files Section */}
+                  {/* Upload Files Section */}
                   <div className="mb-4">
                     <div
                       {...getRootProps()}
@@ -231,9 +231,13 @@ export function SourcesPanel({
                             <p className="font-medium">Drop files here</p>
                           ) : (
                             <>
-                              <p className="font-medium">Add more sources</p>
+                              <p className="font-medium">
+                                {sources.length > 0
+                                  ? "Add more sources"
+                                  : "Add sources"}
+                              </p>
                               <p className="text-xs">
-                                Drop files here or click to browse
+                                Drop .vtt files here or click to browse
                               </p>
                             </>
                           )}
@@ -341,59 +345,14 @@ export function SourcesPanel({
                       })}
                     </div>
                   ) : (
-                    <div className="flex-1 flex flex-col">
-                      {/* Drop Zone */}
-                      <div
-                        {...getRootProps()}
-                        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                          uploading
-                            ? "border-white/10 bg-white/5 cursor-not-allowed opacity-60"
-                            : isDragActive
-                            ? "border-blue-400 bg-blue-400/10 cursor-pointer"
-                            : "border-white/20 hover:border-white/30 cursor-pointer"
-                        }`}
-                      >
-                        <input {...getInputProps()} />
-                        <Upload
-                          className={`h-8 w-8 mx-auto mb-3 ${
-                            uploading ? "text-white/20" : "text-white/40"
-                          }`}
-                        />
-                        <p
-                          className={`text-sm mb-2 ${
-                            uploading ? "text-white/30" : "text-white/60"
-                          }`}
-                        >
-                          {uploading
-                            ? "Uploading files..."
-                            : isDragActive
-                            ? "Drop .vtt files here..."
-                            : "Drag & drop .vtt files here"}
-                        </p>
-                        {!uploading && (
-                          <p className="text-white/40 text-xs">
-                            or{" "}
-                            <span className="text-blue-400 cursor-pointer">
-                              browse .vtt files
-                            </span>
-                          </p>
-                        )}
-                        {uploading && (
-                          <p className="text-white/40 text-xs mt-2">
-                            Please wait while files are being processed...
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="mt-6 text-center">
-                        <FileText className="h-12 w-12 text-white/40 mx-auto mb-4" />
-                        <p className="text-white/60 text-sm mb-2">
-                          No sources yet
-                        </p>
-                        <p className="text-white/40 text-xs">
-                          Add documents to start chatting with your content
-                        </p>
-                      </div>
+                    <div className="mt-6 text-center">
+                      <FileText className="h-12 w-12 text-white/40 mx-auto mb-4" />
+                      <p className="text-white/60 text-sm mb-2">
+                        No sources yet
+                      </p>
+                      <p className="text-white/40 text-xs">
+                        Use the upload section above to add .vtt files
+                      </p>
                     </div>
                   )}
                 </div>
