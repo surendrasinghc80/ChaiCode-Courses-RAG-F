@@ -553,7 +553,7 @@ export function ChatInterface({ sources, onSendMessage }) {
   };
 
   const hasMessages = messages.length > 0;
-  const canSendMessage = sources.length > 0 && inputValue.trim() && !isTyping;
+  const canSendMessage = inputValue.trim() && !isTyping;
   const processedSources = sources.filter((s) => s.status === "processed");
   const ragStats = ragService?.getStats?.();
 
@@ -698,7 +698,7 @@ export function ChatInterface({ sources, onSendMessage }) {
               onKeyPress={handleKeyPress}
               placeholder={
                 processedSources.length === 0
-                  ? "Upload and process sources to get started"
+                  ? "Ask any question or upload sources for RAG-powered responses..."
                   : "Ask questions about your sources..."
               }
               className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 resize-none min-h-[44px] max-h-32"
