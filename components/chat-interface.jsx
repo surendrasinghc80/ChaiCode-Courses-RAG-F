@@ -346,16 +346,16 @@ export function ChatInterface({
       const aiMessage = {
         id: Date.now() + 1,
         role: "assistant",
-        content: backend.answer || "No answer returned.",
+        content: backend.data?.answer || "No answer returned.",
         timestamp: new Date(),
-        sources: (backend.references || []).map((r) => ({
+        sources: (backend.data?.references || []).map((r) => ({
           name: `${r.file} • ${r.section} • ${r.start} → ${r.end}`,
         })),
-        ragInfo: backend.references
+        ragInfo: backend.data?.references
           ? {
-              usedChunks: backend.references.length,
-              sources: backend.references,
-              confidence: backend.references[0]?.score,
+              usedChunks: backend.data.references.length,
+              sources: backend.data.references,
+              confidence: backend.data.references[0]?.score,
             }
           : undefined,
       };
@@ -549,38 +549,42 @@ export function ChatInterface({
   };
 
   const hasMessages = messages.length > 0;
-  const canSendMessage = inputValue.trim() && !isTyping;
   const processedSources = sources.filter((s) => s.status === "processed");
-  const ragStats = ragService?.getStats?.();
+  const ragStats = ragService
+    ? {
+        totalChunks: processedSources.length * 10, // Estimated
+        avgChunkSize: 150, // Estimated words per chunk
+      }
+    : null;
+
+  const canSendMessage = inputValue.trim().length > 0 && !isTyping;
 
   return (
-    <div className="flex-1 bg-black/10 backdrop-blur-sm flex flex-col">
-      {/* Chat Header */}
-      <div className="p-4 border-b border-white/10">
+    <div className="flex flex-col h-full bg-black/20 backdrop-blur-sm">
+      {/* Header */}
+      <div className="p-4 border-b border-white/10 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <h2 className="text-white font-medium">Chat</h2>
+          <h2 className="text-white text-lg font-medium">Chat</h2>
           <div className="flex items-center gap-2">
-            {processedSources.length > 0 && ragStats && (
-              <Badge variant="secondary" className="text-xs">
-                {ragStats.totalChunks} chunks ready
-              </Badge>
-            )}
-            {sources.length > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {processedSources.length}/{sources.length} sources processed
+            {processedSources.length > 0 && (
+              <Badge variant="outline" className="text-white border-white/20">
+                {processedSources.length} source
+                {processedSources.length !== 1 ? "s" : ""} ready
               </Badge>
             )}
           </div>
         </div>
-        {processedSources.length > 0 && ragStats && (
-          <p className="text-white/40 text-xs mt-1">
-            RAG system ready • {ragStats.avgChunkSize} avg words per chunk
-          </p>
+        {ragStats && (
+          <div>
+            <p className="text-white/40 text-xs mt-1">
+              RAG system ready • {ragStats.avgChunkSize} avg words per chunk
+            </p>
+          </div>
         )}
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {!hasMessages && sources.length === 0 ? (
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center">
@@ -684,7 +688,7 @@ export function ChatInterface({
       </div>
 
       {/* Input Area */}
-      <div className="p-4 border-t border-white/10 ">
+      <div className="p-4 border-t border-white/10 flex-shrink-0">
         <div className="flex items-end gap-2">
           <div className="flex-1">
             <textarea

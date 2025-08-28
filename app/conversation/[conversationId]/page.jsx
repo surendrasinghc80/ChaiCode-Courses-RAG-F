@@ -8,8 +8,18 @@ export default function ConversationPage() {
   const params = useParams();
   const conversationId = params.conversationId;
 
-  const handleNewChat = () => {
-    window.location.href = "/app";
+  const handleNewChat = async () => {
+    try {
+      const { createConversation } = await import("@/lib/api");
+      const response = await createConversation("New Chat");
+      if (response.success) {
+        window.location.href = `/conversation/${response.data.conversation.id}`;
+      }
+    } catch (error) {
+      console.error("Failed to create new conversation:", error);
+      // Fallback to app page if creation fails
+      window.location.href = "/app";
+    }
   };
 
   const handleSelectChat = (conversation) => {
@@ -52,15 +62,17 @@ export default function ConversationPage() {
 
       {/* Main content */}
       <div className="relative z-10 flex h-screen">
-        {/* Chat Sidebar */}
-        <ChatSidebar
-          onNewChat={handleNewChat}
-          onSelectChat={handleSelectChat}
-          currentChatId={conversationId}
-        />
+        {/* Chat Sidebar - Fixed */}
+        <div className="w-80 flex-shrink-0">
+          <ChatSidebar
+            onNewChat={handleNewChat}
+            onSelectChat={handleSelectChat}
+            currentChatId={conversationId}
+          />
+        </div>
 
-        {/* Chat Interface */}
-        <div className="flex-1">
+        {/* Chat Interface - Scrollable */}
+        <div className="flex-1 flex flex-col min-w-0">
           <ChatInterface sources={[]} conversationId={conversationId} />
         </div>
       </div>
