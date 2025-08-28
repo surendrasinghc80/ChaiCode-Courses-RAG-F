@@ -25,6 +25,7 @@ import { VttFilesProvider, useVttFiles } from "@/contexts/VttFilesContext";
 import { SourcesPanel } from "@/components/sources-panel";
 import { AddSourcesModal } from "@/components/add-sources-modal";
 import { ChatInterface } from "@/components/chat-interface";
+import ChatSidebar from "@/components/chat-sidebar";
 import { useRouter } from "next/navigation";
 // import { StudioPanel } from "@/components/studio-panel";
 
@@ -94,6 +95,16 @@ function NotebookLMContent() {
   const handleSendMessage = (message) => {
     // Handle message sending logic here
     console.log("Sending message:", message);
+  };
+
+  const handleNewChat = () => {
+    // Handle new chat creation
+    console.log("Creating new chat");
+  };
+
+  const handleSelectChat = (conversation) => {
+    // Handle chat selection
+    console.log("Selected chat:", conversation);
   };
 
   return (
@@ -215,12 +226,11 @@ function NotebookLMContent() {
 
         {/* Three-panel layout */}
         <div className="flex h-[calc(100vh-73px)]">
-          {/* Sources Panel */}
-          <SourcesPanel
-            sources={sources}
-            onAddSources={handleAddSources}
-            onDeleteSource={handleDeleteSource}
-            onShowAddModal={() => setShowAddSources(true)}
+          {/* Chat Sidebar */}
+          <ChatSidebar
+            onNewChat={handleNewChat}
+            onSelectChat={handleSelectChat}
+            currentChatId={null}
           />
 
           {/* Chat Panel */}
