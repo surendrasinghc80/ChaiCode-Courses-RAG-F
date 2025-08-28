@@ -21,8 +21,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
 import { signOut, useSession } from "next-auth/react";
-import { VttFilesProvider, useVttFiles } from "@/contexts/VttFilesContext";
-import { SourcesPanel } from "@/components/sources-panel";
 import { AddSourcesModal } from "@/components/add-sources-modal";
 import { ChatInterface } from "@/components/chat-interface";
 import ChatSidebar from "@/components/chat-sidebar";
@@ -34,7 +32,6 @@ function NotebookLMContent() {
   const [sources, setSources] = useState([]);
   const { theme, setTheme } = useTheme();
   const { data: session, status } = useSession();
-  const { files: vttFiles } = useVttFiles();
   const router = useRouter();
 
   // Redirect unauthenticated users to home page
@@ -43,25 +40,6 @@ function NotebookLMContent() {
       router.push("/");
     }
   }, [status, router]);
-
-  // Sync VTT files with sources state on mount and when vttFiles change
-  useEffect(() => {
-    if (vttFiles.length > 0) {
-      const vttSources = vttFiles.map((file) => ({
-        id: file.id,
-        name: file.fileName,
-        type: "text/vtt",
-        size: file.fileSize,
-        uploadedAt: new Date(file.uploadedDate),
-        status: "processed",
-        metadata: {
-          processingTime: "1.2s",
-          chunks: 1,
-        },
-      }));
-      setSources(vttSources);
-    }
-  }, [vttFiles]);
 
   // Show loading while checking authentication
   if (status === "loading") {
@@ -234,7 +212,7 @@ function NotebookLMContent() {
           />
 
           {/* Chat Panel */}
-          <ChatInterface sources={sources} onSendMessage={handleSendMessage} />
+          <ChatInterface sources={[]} onSendMessage={handleSendMessage} />
 
           {/* Studio Panel */}
           {/* <StudioPanel sources={sources} /> */}
@@ -252,9 +230,5 @@ function NotebookLMContent() {
 }
 
 export default function NotebookLM() {
-  return (
-    <VttFilesProvider>
-      <NotebookLMContent />
-    </VttFilesProvider>
-  );
+  return <NotebookLMContent />;
 }

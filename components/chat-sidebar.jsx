@@ -307,7 +307,10 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
                       "w-full justify-start text-left p-3 h-auto hover:bg-gray-800",
                       currentChatId === conversation.id ? "bg-gray-800" : ""
                     )}
-                    onClick={() => onSelectChat?.(conversation)}
+                    onClick={() => {
+                      // Navigate to conversation page
+                      window.location.href = `/conversation/${conversation.id}`;
+                    }}
                   >
                     <div className="flex-1 min-w-0 pr-8">
                       <div className="text-sm font-medium text-white truncate mb-1">

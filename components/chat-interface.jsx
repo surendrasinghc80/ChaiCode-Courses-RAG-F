@@ -25,8 +25,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RAGService } from "@/lib/rag-service";
-import { askQuestion } from "@/lib/api";
-import { useVttFiles } from "@/contexts/VttFilesContext";
+import { askQuestion, getConversation } from "@/lib/api";
 import CodeBlock from "@/components/code-block";
 
 const TypingIndicator = ({ stage = "thinking" }) => {
@@ -245,10 +244,13 @@ const MessageBubble = ({
   );
 };
 
-export function ChatInterface({ sources, onSendMessage }) {
+export function ChatInterface({
+  sources,
+  onSendMessage,
+  conversationId = null,
+}) {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
-  const { chats, addChat } = useVttFiles();
   const [isTyping, setIsTyping] = useState(false);
   const [typingStage, setTypingStage] = useState("thinking");
   const [ragService, setRagService] = useState(null);
@@ -278,21 +280,34 @@ export function ChatInterface({ sources, onSendMessage }) {
     scrollToBottom();
   }, [messages, isTyping]);
 
+  // Load conversation messages if conversationId is provided
   useEffect(() => {
-    if (chats.length > 0) {
-      // Convert VTT context chats to message format
-      const convertedMessages = chats.map((chat) => ({
-        id: chat.id,
-        role: chat.role,
-        content: chat.message, // Convert 'message' field to 'content'
-        timestamp: chat.timestamp,
-        sources: chat.sources || [],
-        ragInfo: chat.ragInfo,
-        error: chat.error,
-      }));
-      setMessages(convertedMessages);
+    if (conversationId) {
+      loadConversationMessages();
     }
-  }, [chats]);
+  }, [conversationId]);
+
+  const loadConversationMessages = async () => {
+    try {
+      const response = await getConversation(conversationId);
+      if (response.success && response.data.conversation.messages) {
+        const convertedMessages = response.data.conversation.messages.map(
+          (msg) => ({
+            id: msg.id,
+            role: msg.role,
+            content: msg.message,
+            timestamp: msg.timestamp,
+            sources: [],
+            ragInfo: null,
+            error: null,
+          })
+        );
+        setMessages(convertedMessages);
+      }
+    } catch (error) {
+      console.error("Failed to load conversation messages:", error);
+    }
+  };
 
   // Stop speech on unmount
   useEffect(() => {
@@ -316,8 +331,6 @@ export function ChatInterface({ sources, onSendMessage }) {
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    // Store user message in VTT context
-    addChat(userMessage.content, "user", { timestamp: userMessage.timestamp });
 
     const currentQuery = inputValue;
     setInputValue("");
@@ -328,7 +341,7 @@ export function ChatInterface({ sources, onSendMessage }) {
       setTimeout(() => setTypingStage("searching"), 400);
       setTypingStage("generating");
 
-      const backend = await askQuestion(currentQuery);
+      const backend = await askQuestion(currentQuery, { conversationId });
 
       const aiMessage = {
         id: Date.now() + 1,
@@ -348,11 +361,6 @@ export function ChatInterface({ sources, onSendMessage }) {
       };
 
       setMessages((prev) => [...prev, aiMessage]);
-      // Store AI message in VTT context
-      addChat(aiMessage.content, "assistant", {
-        timestamp: aiMessage.timestamp,
-        sources: aiMessage.sources,
-      });
       setIsTyping(false);
     } catch (error) {
       console.error("Error generating response:", error);
@@ -368,11 +376,6 @@ export function ChatInterface({ sources, onSendMessage }) {
       };
 
       setMessages((prev) => [...prev, errorMessage]);
-      // Store error message in VTT context
-      addChat(errorMessage.content, "assistant", {
-        timestamp: errorMessage.timestamp,
-        error: true,
-      });
       setIsTyping(false);
     }
 
@@ -432,13 +435,6 @@ export function ChatInterface({ sources, onSendMessage }) {
           const newMessages = [...prev];
           newMessages[messageIndex] = newAiMessage;
           return newMessages;
-        });
-
-        // Store regenerated message in VTT context
-        addChat(newAiMessage.content, "assistant", {
-          timestamp: newAiMessage.timestamp,
-          sources: newAiMessage.sources,
-          regenerated: true,
         });
 
         setIsTyping(false);
