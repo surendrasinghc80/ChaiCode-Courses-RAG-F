@@ -62,86 +62,6 @@ function NotebookLMContent() {
     }
   }, [vttFiles]);
 
-  // Background image rotation
-  const images = useMemo(
-    () => [
-      "/gradiant-bg-1.jpg",
-      "/gradiant-bg-2.jpg",
-      "/gradiant-bg-3.jpg",
-      "/gradiant-bg-4.jpg",
-      "/gradiant-bg-5.jpg",
-      "/gradiant-bg-6.jpg",
-      "/gradiant-bg-7.jpg",
-      "/gradiant-bg-8.jpg",
-      "/gradiant-bg-9.jpg",
-      "/gradiant-bg-10.jpg",
-      "/gradiant-bg-11.jpg",
-      "/gradiant-bg-12.jpg",
-    ],
-    []
-  );
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [nextIndex, setNextIndex] = useState(1);
-  const [fading, setFading] = useState(false);
-  const ROTATE_MS = 6000; // change every 6 seconds
-  const FADE_MS = 1000; // 1s crossfade
-  const fadeTimeoutRef = useRef(null);
-  const cycleTimeoutRef = useRef(null);
-  const currentIndexRef = useRef(0);
-
-  // Keep ref in sync
-  useEffect(() => {
-    currentIndexRef.current = currentIndex;
-  }, [currentIndex]);
-
-  // Rotation loop with preload-before-fade, sequential to avoid overlaps
-  useEffect(() => {
-    let cancelled = false;
-
-    const runCycle = () => {
-      if (cancelled) return;
-      const ni = (currentIndexRef.current + 1) % images.length;
-      const preload = new Image();
-
-      const triggerFade = () => {
-        if (cancelled) return;
-        setNextIndex(ni);
-        setFading(true);
-        if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
-        fadeTimeoutRef.current = setTimeout(() => {
-          if (cancelled) return;
-          setCurrentIndex(ni);
-          setFading(false);
-          // Schedule next cycle after display period
-          cycleTimeoutRef.current = setTimeout(runCycle, ROTATE_MS);
-        }, FADE_MS);
-      };
-
-      // Try decode first for smoother results
-      preload.src = images[ni];
-      if (preload.decode) {
-        preload
-          .decode()
-          .then(triggerFade)
-          .catch(() => {
-            // Fallback to onload if decode fails
-            preload.onload = triggerFade;
-          });
-      } else {
-        preload.onload = triggerFade;
-      }
-    };
-
-    // Initial delay so first image is visible for ROTATE_MS before first change
-    cycleTimeoutRef.current = setTimeout(runCycle, ROTATE_MS);
-
-    return () => {
-      cancelled = true;
-      if (cycleTimeoutRef.current) clearTimeout(cycleTimeoutRef.current);
-      if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
-    };
-  }, [images]);
-
   // Show loading while checking authentication
   if (status === "loading") {
     return (
@@ -151,7 +71,6 @@ function NotebookLMContent() {
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
-      
     );
   }
 
@@ -179,25 +98,37 @@ function NotebookLMContent() {
 
   return (
     <div className="min-h-screen relative">
-      {/* Backgrounds with crossfade */}
+      {/* Background Video */}
       <div className="fixed inset-0 z-0">
-        {/* Current */}
-        <img
-          src={images[currentIndex]}
-          alt="Background current"
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${fading ? "opacity-0" : "opacity-100"
-            }`}
+        <video
+          className="w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          onLoadedData={(e) => {
+            e.currentTarget.play().catch(console.error);
+          }}
+        >
+          <source
+            src="https://firebasestorage.googleapis.com/v0/b/project-x-e3c38.appspot.com/o/animation-video%2Flanding-page-video.mp4?alt=media&token=3528e1cb-c8a5-4c8b-a37f-97f1e7c87e49"
+            type="video/mp4"
+          />
+        </video>
+        {/* Enhanced fallback background with animated gradient */}
+        <div
+          className="absolute inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 animate-pulse"
+          style={{
+            backgroundImage: `
+              radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%)
+            `,
+          }}
         />
-        {/* Next (for crossfade) */}
-        <img
-          src={images[nextIndex]}
-          alt="Background next"
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${fading ? "opacity-100" : "opacity-0"
-            }`}
-        />
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-black/50" />
       </div>
+      <div className="fixed inset-0 bg-background/50 backdrop-blur-md z-10" />
 
       {/* Main content */}
       <div className="relative z-10 flex flex-col h-screen">
