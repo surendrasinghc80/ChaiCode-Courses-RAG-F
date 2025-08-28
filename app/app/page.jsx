@@ -86,7 +86,7 @@ function NotebookLMContent() {
   };
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative w-full">
       {/* Background Video */}
       <div className="fixed inset-0 z-0">
         <video

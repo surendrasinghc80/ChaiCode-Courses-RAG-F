@@ -14,7 +14,6 @@ import {
   Bot,
   Settings,
   Crown,
-  Sparkles,
   MoreHorizontal,
   Share,
   Edit,
@@ -197,8 +196,8 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
       {/* Header */}
       <div className="p-4 border-b border-white/10">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 rounded-sm bg-white flex items-center justify-center">
-            <Sparkles className="h-4 w-4 text-gray-900" />
+          <div className="w-6 h-6 rounded-sm bg-zinc-800 flex items-center justify-center">
+            <img src="/icon.svg" alt="Icon" className="h-4 w-4 text-gray-900" />
           </div>
         </div>
 
