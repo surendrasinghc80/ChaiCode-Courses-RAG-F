@@ -28,7 +28,7 @@ export default function LoginPage() {
     password: "",
   });
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const callbackUrl = searchParams.get("callbackUrl") || "/app";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,7 +46,7 @@ export default function LoginPage() {
       if (result?.error) {
         setError("Invalid email or password. Please try again.");
       } else if (result?.ok) {
-        window.location.href = result.url || callbackUrl || "/";
+        window.location.href = result.url || callbackUrl || "/app";
       }
     } catch (err) {
       setError("Invalid email or password. Please try again.");

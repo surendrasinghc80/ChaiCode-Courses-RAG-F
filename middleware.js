@@ -6,6 +6,7 @@ export default withAuth(
     const { nextUrl } = req;
     const isAuth = !!req.nextauth.token;
     const isAuthRoute = ["/login", "/signup"].includes(nextUrl.pathname);
+    const isRootRoute = nextUrl.pathname === "/";
 
     // Allow NextAuth/api/internal and static assets
     const publicPaths = [
@@ -20,6 +21,11 @@ export default withAuth(
       return NextResponse.next();
     }
 
+    // Allow unauthenticated users to access root path (landing page)
+    if (!isAuth && isRootRoute) {
+      return NextResponse.next();
+    }
+
     if (!isAuth && !isAuthRoute) {
       const loginUrl = new URL("/login", nextUrl);
       loginUrl.searchParams.set(
@@ -30,7 +36,7 @@ export default withAuth(
     }
 
     if (isAuth && isAuthRoute) {
-      return NextResponse.redirect(new URL("/", nextUrl));
+      return NextResponse.redirect(new URL("/app", nextUrl));
     }
 
     return NextResponse.next();
