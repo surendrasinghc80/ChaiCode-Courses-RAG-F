@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Plus,
   Search,
   FileText,
   File,
@@ -210,13 +209,12 @@ export function SourcesPanel({
                   <div className="mb-4">
                     <div
                       {...getRootProps()}
-                      className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
-                        uploading
-                          ? "border-white/10 bg-white/5 cursor-not-allowed opacity-60"
-                          : isDragActive
+                      className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${uploading
+                        ? "border-white/10 bg-white/5 cursor-not-allowed opacity-60"
+                        : isDragActive
                           ? "border-blue-400 bg-blue-400/10 cursor-pointer"
                           : "border-white/20 hover:border-white/30 cursor-pointer"
-                      }`}
+                        }`}
                     >
                       <input {...getInputProps()} />
                       <div className="flex flex-col items-center gap-2">

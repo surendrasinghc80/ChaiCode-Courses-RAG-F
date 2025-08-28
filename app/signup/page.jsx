@@ -76,7 +76,7 @@ export default function SignupPage() {
         process.env.NEXT_PUBLIC_API_BASE_URL ||
         process.env.NEXT_PUBLIC_BACKEND_URL ||
         "";
-      
+
       const response = await axios.post(`${BASE_URL}${AuthenticationApi.Register}`, {
         username: formData.username,
         email: formData.email,
@@ -122,13 +122,22 @@ export default function SignupPage() {
   if (success) {
     return (
       <div className="min-h-screen relative overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: "url(/gradient-bg.jpg)",
-          }}
-        />
+        {/* Video Background */}
+        <video
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay
+          loop
+          muted
+          playsInline
+        >
+          <source src="/landing-page-video.mp4" type="video/mp4" />
+        </video>
+
+
+        {/* Dark overlay for readability */}
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+
+        {/* Signup Form Content */}
 
         <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
           <Card className="w-full max-w-md border-border/50 bg-card/95 backdrop-blur-sm">
@@ -169,7 +178,7 @@ export default function SignupPage() {
   const [nextIndex, setNextIndex] = useState(1);
   const [fading, setFading] = useState(false);
   const ROTATE_MS = 6000;
-  const FADE_MS = 1000;
+  const FADE_MS = 2000;
   const fadeTimeoutRef = useRef(null);
   const cycleTimeoutRef = useRef(null);
   const currentIndexRef = useRef(0);
