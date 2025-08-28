@@ -33,6 +33,7 @@ import {
   updateConversation,
   deleteConversation,
 } from "@/lib/api";
+import { ShareModal } from "@/components/share-modal";
 
 const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,6 +43,8 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState(null);
 
   // Load conversations from API
   const loadConversations = async () => {
@@ -124,7 +127,8 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
       const response = await createConversation("New Chat");
       if (response.success) {
         await loadConversations(); // Refresh the list
-        onNewChat?.(response.data.conversation);
+        // Redirect to the new conversation page
+        window.location.href = `/conversation/${response.data.conversation.id}`;
       }
     } catch (err) {
       console.error("Failed to create conversation:", err);
@@ -138,7 +142,8 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
 
     switch (action) {
       case "share":
-        console.log("Share functionality not yet implemented");
+        setSelectedConversation(conversation);
+        setShareModalOpen(true);
         break;
       case "rename":
         const newTitle = prompt("Enter new title:", conversation.title);
@@ -227,23 +232,6 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500"
           />
-        </div>
-      </div>
-
-      {/* Bottom Navigation */}
-      <div className="p-4 border-b border-white/10">
-        <div className="space-y-2">
-          {bottomItems.map((item, index) => (
-            <Button
-              key={index}
-              variant="ghost"
-              className="w-full justify-start text-gray-300 hover:bg-gray-800 hover:text-white"
-              onClick={item.onClick}
-            >
-              <item.icon className="h-4 w-4 mr-3" />
-              {item.label}
-            </Button>
-          ))}
         </div>
       </div>
 
@@ -417,6 +405,19 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
           </Button>
         </div>
       </div>
+
+      {/* Share Modal */}
+      {selectedConversation && (
+        <ShareModal
+          isOpen={shareModalOpen}
+          onClose={() => {
+            setShareModalOpen(false);
+            setSelectedConversation(null);
+          }}
+          conversationId={selectedConversation.id}
+          conversationTitle={selectedConversation.title}
+        />
+      )}
     </div>
   );
 };

@@ -248,6 +248,8 @@ export function ChatInterface({
   sources,
   onSendMessage,
   conversationId = null,
+  showHeader = true,
+  readOnly = false,
 }) {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
@@ -561,27 +563,29 @@ export function ChatInterface({
 
   return (
     <div className="flex flex-col w-full h-full bg-black/20 backdrop-blur-sm">
-      {/* Header */}
-      <div className="p-4 border-b border-white/10 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <h2 className="text-white text-lg font-medium">Chat</h2>
-          <div className="flex items-center gap-2">
-            {processedSources.length > 0 && (
-              <Badge variant="outline" className="text-white border-white/20">
-                {processedSources.length} source
-                {processedSources.length !== 1 ? "s" : ""} ready
-              </Badge>
-            )}
+      {/* Header - conditionally rendered */}
+      {showHeader && (
+        <div className="p-4 border-b border-white/10 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <h2 className="text-white text-lg font-medium">Chat</h2>
+            <div className="flex items-center gap-2">
+              {processedSources.length > 0 && (
+                <Badge variant="outline" className="text-white border-white/20">
+                  {processedSources.length} source
+                  {processedSources.length !== 1 ? "s" : ""} ready
+                </Badge>
+              )}
+            </div>
           </div>
+          {ragStats && (
+            <div>
+              <p className="text-white/40 text-xs mt-1">
+                RAG system ready • {ragStats.avgChunkSize} avg words per chunk
+              </p>
+            </div>
+          )}
         </div>
-        {ragStats && (
-          <div>
-            <p className="text-white/40 text-xs mt-1">
-              RAG system ready • {ragStats.avgChunkSize} avg words per chunk
-            </p>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto min-h-0">
@@ -687,48 +691,50 @@ export function ChatInterface({
         )}
       </div>
 
-      {/* Input Area */}
-      <div className="p-4 border-t border-white/10 flex-shrink-0">
-        <div className="flex items-end gap-2">
-          <div className="flex-1">
-            <textarea
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={
-                processedSources.length === 0
-                  ? "Ask any question or upload sources for RAG-powered responses..."
-                  : "Ask questions about your sources..."
-              }
-              className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 resize-none min-h-[44px] max-h-32"
-              disabled={false}
-              rows={1}
-              style={{
-                height: "auto",
-                minHeight: "44px",
-              }}
-              onInput={(e) => {
-                e.target.style.height = "auto";
-                e.target.style.height =
-                  Math.min(e.target.scrollHeight, 128) + "px";
-              }}
-            />
+      {/* Input Area - Hidden in read-only mode */}
+      {!readOnly && (
+        <div className="p-4 border-t border-white/10 flex-shrink-0">
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <textarea
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder={
+                  processedSources.length === 0
+                    ? "Ask any question or upload sources for RAG-powered responses..."
+                    : "Ask questions about your sources..."
+                }
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 resize-none min-h-[44px] max-h-32"
+                disabled={false}
+                rows={1}
+                style={{
+                  height: "auto",
+                  minHeight: "44px",
+                }}
+                onInput={(e) => {
+                  e.target.style.height = "auto";
+                  e.target.style.height =
+                    Math.min(e.target.scrollHeight, 128) + "px";
+                }}
+              />
+            </div>
+            <Button
+              size="sm"
+              onClick={handleSend}
+              disabled={!canSendMessage}
+              className="bg-blue-600 hover:bg-blue-700 mb-2 disabled:bg-gray-600 h-11 px-4"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
-          <Button
-            size="sm"
-            onClick={handleSend}
-            disabled={!canSendMessage}
-            className="bg-blue-600 hover:bg-blue-700 mb-2 disabled:bg-gray-600 h-11 px-4"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          <p className="text-white/40 text-xs mt-2 text-center">
+            RAG-powered responses based on couses sub-titles • ChaiCode - RAG
+            can be inaccurate, please double-check responses.
+          </p>
         </div>
-        <p className="text-white/40 text-xs mt-2 text-center">
-          RAG-powered responses based on couses sub-titles • ChaiCode - RAG can
-          be inaccurate, please double-check responses.
-        </p>
-      </div>
+      )}
     </div>
   );
 }

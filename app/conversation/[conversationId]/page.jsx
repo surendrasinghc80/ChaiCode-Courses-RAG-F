@@ -73,7 +73,26 @@ export default function ConversationPage() {
 
         {/* Chat Interface - Scrollable */}
         <div className="flex-1 flex flex-col min-w-0">
-          <ChatInterface sources={[]} conversationId={conversationId} />
+          {/* Header */}
+          <div className="p-4 border-b border-white/10 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <h2 className="text-white text-lg font-medium">Chat</h2>
+              <div className="flex items-center gap-2">
+                {/* <div className="text-white/60 text-sm">
+                  Conversation ID: {conversationId}
+                </div> */}
+              </div>
+            </div>
+            <p className="text-white/40 text-xs mt-1">
+              RAG system ready • Ask questions about your sources
+            </p>
+          </div>
+
+          <ChatInterface
+            sources={[]}
+            conversationId={conversationId}
+            showHeader={false}
+          />
         </div>
       </div>
     </div>
