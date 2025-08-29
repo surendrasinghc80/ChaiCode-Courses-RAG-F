@@ -140,25 +140,6 @@ const MessageBubble = ({
         >
           {renderMessageContent(message.content)}
 
-          {/* RAG Context Info */}
-          {message.ragInfo && !isUser && (
-            <div className="mt-3 pt-3 border-t border-white/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Search className="h-3 w-3 text-white/60" />
-                <span className="text-xs text-white/60">
-                  Found {message.ragInfo.usedChunks} relevant passages from{" "}
-                  {message.ragInfo.sources.length} source
-                  {message.ragInfo.sources.length !== 1 ? "s" : ""}
-                </span>
-                {message.ragInfo.confidence && (
-                  <Badge variant="secondary" className="text-xs">
-                    {Math.round(message.ragInfo.confidence * 100)}% confidence
-                  </Badge>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Source Citations */}
           {message.sources && message.sources.length > 0 && (
             <div className="mt-3 pt-3 border-t border-white/20">
@@ -250,6 +231,7 @@ export function ChatInterface({
   conversationId = null,
   showHeader = true,
   readOnly = false,
+  initialMessages = [],
 }) {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
@@ -264,6 +246,10 @@ export function ChatInterface({
   // ElevenLabs audio playback
   const audioRef = useRef(null);
   const audioUrlRef = useRef(null);
+  // Loading state for conversation messages
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [loadedConversationId, setLoadedConversationId] = useState(null);
+  const loadTimeoutRef = useRef(null);
 
   // Initialize RAG service when sources change
   useEffect(() => {
@@ -282,32 +268,89 @@ export function ChatInterface({
     scrollToBottom();
   }, [messages, isTyping]);
 
-  // Load conversation messages if conversationId is provided
+  // Load conversation messages if conversationId is provided or set initial messages
   useEffect(() => {
-    if (conversationId) {
+    if (initialMessages.length > 0) {
+      // For archived conversations, use provided messages
+      const convertedMessages = initialMessages.map((msg) => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.message,
+        timestamp: msg.timestamp,
+        sources: [],
+        ragInfo: null,
+        error: null,
+      }));
+      setMessages(convertedMessages);
+      setLoadedConversationId(conversationId);
+    } else if (
+      conversationId &&
+      conversationId !== loadedConversationId &&
+      !loadingMessages
+    ) {
       loadConversationMessages();
     }
-  }, [conversationId]);
+
+    // Cleanup function to reset state when conversation changes
+    return () => {
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current);
+        loadTimeoutRef.current = null;
+      }
+      if (conversationId !== loadedConversationId) {
+        setLoadingMessages(false);
+      }
+    };
+  }, [conversationId, initialMessages]);
 
   const loadConversationMessages = async () => {
+    // Prevent multiple simultaneous calls
+    if (loadingMessages || loadedConversationId === conversationId) {
+      return;
+    }
+
     try {
+      setLoadingMessages(true);
       const response = await getConversation(conversationId);
       if (response.success && response.data.conversation.messages) {
-        const convertedMessages = response.data.conversation.messages.map(
-          (msg) => ({
+        // Sort messages by timestamp to ensure correct chronological order
+        const sortedMessages = response.data.conversation.messages.sort(
+          (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+        );
+
+        const convertedMessages = sortedMessages.map((msg) => {
+          // Extract references from metadata if available
+          const references = msg.metadata?.references || [];
+          const sources = references.map((ref) => ({
+            name: `${ref.file} • ${ref.section} • ${ref.start} → ${ref.end}`,
+          }));
+
+          const ragInfo =
+            references.length > 0
+              ? {
+                  usedChunks: references.length,
+                  sources: references,
+                  confidence: references[0]?.score,
+                }
+              : null;
+
+          return {
             id: msg.id,
             role: msg.role,
             content: msg.message,
             timestamp: msg.timestamp,
-            sources: [],
-            ragInfo: null,
+            sources: sources,
+            ragInfo: ragInfo,
             error: null,
-          })
-        );
+          };
+        });
         setMessages(convertedMessages);
+        setLoadedConversationId(conversationId);
       }
     } catch (error) {
       console.error("Failed to load conversation messages:", error);
+    } finally {
+      setLoadingMessages(false);
     }
   };
 

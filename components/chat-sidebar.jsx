@@ -32,6 +32,7 @@ import {
   createConversation,
   updateConversation,
   deleteConversation,
+  archiveConversation,
 } from "@/lib/api";
 import { ShareModal } from "@/components/share-modal";
 
@@ -163,7 +164,19 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
         }
         break;
       case "archive":
-        console.log("Archive functionality not yet implemented");
+        try {
+          const response = await archiveConversation(conversation.id, {
+            title: conversation.title,
+            description: `Archived conversation from ${new Date().toLocaleDateString()}`
+          });
+          if (response.success) {
+            await loadConversations(); // Refresh the list
+            console.log("Conversation archived successfully");
+          }
+        } catch (err) {
+          console.error("Failed to archive conversation:", err);
+          setError(err.message);
+        }
         break;
       case "delete":
         if (
@@ -188,7 +201,7 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
   const navigationItems = [
     { icon: Plus, label: "New chat", onClick: handleNewChat },
     { icon: Search, label: "Search chats", onClick: () => {} },
-    { icon: Library, label: "Library", onClick: () => {} },
+    { icon: Library, label: "Archives", onClick: () => window.location.href = "/archives" },
   ];
 
   const bottomItems = [
