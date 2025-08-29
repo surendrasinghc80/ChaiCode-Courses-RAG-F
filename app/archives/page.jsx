@@ -5,9 +5,18 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   ArrowLeft,
   Archive,
@@ -20,6 +29,8 @@ import {
   Edit,
   MoreHorizontal,
   Filter,
+  Save,
+  X,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
@@ -32,6 +43,7 @@ import {
   getAllArchives,
   deleteArchivedConversation,
   unarchiveConversation,
+  updateArchivedConversation,
 } from "@/lib/api";
 
 export default function ArchivesPage() {
@@ -44,6 +56,14 @@ export default function ArchivesPage() {
   const [filteredArchives, setFilteredArchives] = useState([]);
   const [hoveredArchive, setHoveredArchive] = useState(null);
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingArchive, setEditingArchive] = useState(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    tags: [],
+  });
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -92,6 +112,47 @@ export default function ArchivesPage() {
     }
   };
 
+  const handleEditSubmit = async () => {
+    try {
+      setEditLoading(true);
+      const response = await updateArchivedConversation(
+        editingArchive.id,
+        editForm
+      );
+      if (response.success) {
+        // Update the archive in the local state
+        setArchives((prev) =>
+          prev.map((archive) =>
+            archive.id === editingArchive.id
+              ? {
+                  ...archive,
+                  title: editForm.title,
+                  description: editForm.description,
+                  tags: editForm.tags,
+                }
+              : archive
+          )
+        );
+        setIsEditDialogOpen(false);
+        setEditingArchive(null);
+      } else {
+        console.error("Failed to update archive:", response.message);
+      }
+    } catch (err) {
+      console.error("Error updating archive:", err);
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleTagsChange = (tagsString) => {
+    const tags = tagsString
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+    setEditForm((prev) => ({ ...prev, tags }));
+  };
+
   const handleArchiveAction = async (action, archive, e) => {
     e.stopPropagation();
 
@@ -100,8 +161,13 @@ export default function ArchivesPage() {
         router.push(`/conversation/${archive.conversationId}`);
         break;
       case "edit":
-        // TODO: Implement edit modal
-        console.log("Edit archive:", archive);
+        setEditingArchive(archive);
+        setEditForm({
+          title: archive.title || "",
+          description: archive.description || "",
+          tags: archive.tags || [],
+        });
+        setIsEditDialogOpen(true);
         break;
       case "unarchive":
         if (confirm(`Are you sure you want to unarchive "${archive.title}"?`)) {
@@ -146,7 +212,7 @@ export default function ArchivesPage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p>Loading archives...</p>
@@ -416,6 +482,88 @@ export default function ArchivesPage() {
           )}
         </div>
       </div>
+
+      {/* Edit Archive Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="bg-background border-border text-foreground max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-foreground flex items-center gap-2">
+              <Edit className="h-4 w-4" />
+              Edit Archive
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Update the archive title, description, and tags.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-foreground text-sm font-medium mb-2 block">
+                Title
+              </label>
+              <Input
+                value={editForm.title}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, title: e.target.value }))
+                }
+                placeholder="Enter archive title"
+                className="bg-background border-border text-foreground"
+              />
+            </div>
+
+            <div>
+              <label className="text-foreground text-sm font-medium mb-2 block">
+                Description
+              </label>
+              <Textarea
+                value={editForm.description}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                placeholder="Enter archive description"
+                className="bg-background border-border text-foreground"
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <label className="text-foreground text-sm font-medium mb-2 block">
+                Tags
+              </label>
+              <Input
+                value={editForm.tags.join(", ")}
+                onChange={(e) => handleTagsChange(e.target.value)}
+                placeholder="Enter tags separated by commas (e.g., nodejs, important, tutorial)"
+                className="bg-background border-border text-foreground"
+              />
+              <p className="text-muted-foreground text-xs mt-1">
+                Separate multiple tags with commas
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={editLoading}
+              className="bg-secondary hover:bg-secondary/80"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditSubmit}
+              disabled={editLoading || !editForm.title.trim()}
+              className="bg-primary hover:bg-primary/90"
+            >
+              {editLoading ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

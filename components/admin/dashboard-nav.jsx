@@ -10,6 +10,7 @@ export default function DashboardNav() {
     <header className="border-b border-border bg-card/50 backdrop-blur">
       <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
+          <img src="/icon.svg" alt="ChaiCode RAG" className="h-8 w-8" />
           <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
           <div className="hidden md:flex items-center gap-1 text-sm text-muted-foreground">
             <span>•</span>

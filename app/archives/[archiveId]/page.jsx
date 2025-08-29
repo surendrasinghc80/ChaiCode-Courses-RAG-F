@@ -2,12 +2,14 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +31,14 @@ import {
   Link,
   Save,
   X,
+  Bot,
+  User,
+  Copy,
+  Volume2,
+  RefreshCw,
+  ThumbsUp,
+  ThumbsDown,
+  Square,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getArchivedConversation, updateArchivedConversation } from "@/lib/api";
@@ -50,6 +60,10 @@ export default function ArchivedConversationPage() {
     tags: [],
   });
   const [editLoading, setEditLoading] = useState(false);
+  // TTS state
+  const [speakingId, setSpeakingId] = useState(null);
+  const audioRef = useRef(null);
+  const audioUrlRef = useRef(null);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -156,9 +170,247 @@ export default function ArchivedConversationPage() {
     });
   };
 
+  // Helper function to copy code to clipboard
+  const handleCopyCode = (code) => {
+    navigator.clipboard.writeText(code);
+  };
+
+  // Helper function to render message content with proper formatting
+  const renderMessageContent = (content) => {
+    if (!content) return null;
+
+    // Split content by code blocks
+    const codeBlockRegex = /```([\s\S]*?)```/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = codeBlockRegex.exec(content)) !== null) {
+      // Add text before code block
+      if (match.index > lastIndex) {
+        const textBefore = content.slice(lastIndex, match.index);
+        parts.push(
+          <p key={`t-${lastIndex}`} className="whitespace-pre-wrap">
+            {textBefore}
+          </p>
+        );
+      }
+
+      // Add code block with copy button
+      const codeContent = match[1];
+      parts.push(
+        <div key={`c-${match.index}`} className="relative group">
+          <pre className="bg-muted p-3 rounded-md overflow-x-auto text-sm border pr-12">
+            <code>{codeContent}</code>
+          </pre>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleCopyCode(codeContent)}
+            className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background border border-border"
+            title="Copy code"
+          >
+            <Copy className="h-3 w-3" />
+          </Button>
+        </div>
+      );
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text
+    if (lastIndex < content.length) {
+      const tail = content.slice(lastIndex);
+      parts.push(
+        <p key={`t-${lastIndex}-end`} className="whitespace-pre-wrap">
+          {tail}
+        </p>
+      );
+    }
+    return <div className="prose prose-sm max-w-none">{parts}</div>;
+  };
+
+  // TTS functionality
+  const handleSpeak = async (message) => {
+    if (speakingId === message.id) {
+      // Stop current audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+        audioUrlRef.current = null;
+      }
+      setSpeakingId(null);
+      return;
+    }
+
+    try {
+      setSpeakingId(message.id);
+
+      // Use ElevenLabs TTS API
+      const response = await fetch("/api/tts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: message.message,
+          voice_id: "pNInz6obpgDQGcFmaJgB", // Adam voice
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("TTS request failed");
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      audioUrlRef.current = audioUrl;
+
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        setSpeakingId(null);
+        if (audioUrlRef.current) {
+          URL.revokeObjectURL(audioUrlRef.current);
+          audioUrlRef.current = null;
+        }
+        audioRef.current = null;
+      };
+
+      audio.onerror = () => {
+        setSpeakingId(null);
+        if (audioUrlRef.current) {
+          URL.revokeObjectURL(audioUrlRef.current);
+          audioUrlRef.current = null;
+        }
+        audioRef.current = null;
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.error("TTS error:", error);
+      setSpeakingId(null);
+
+      // Fallback to browser TTS
+      if ("speechSynthesis" in window) {
+        const utterance = new SpeechSynthesisUtterance(message.message);
+        utterance.onend = () => setSpeakingId(null);
+        utterance.onerror = () => setSpeakingId(null);
+        speechSynthesis.speak(utterance);
+      }
+    }
+  };
+
+  // Message bubble component for archived messages
+  const MessageBubble = ({ message }) => {
+    const isUser = message.role === "user";
+    const messageReferences = message.metadata?.references || [];
+    const isSpeaking = speakingId === message.id;
+
+    const handleCopy = (content) => {
+      navigator.clipboard.writeText(content);
+    };
+
+    return (
+      <div
+        className={cn(
+          "flex gap-3 p-4",
+          isUser ? "justify-end" : "justify-start"
+        )}
+      >
+        {!isUser && (
+          <Avatar className="h-8 w-8 flex-shrink-0">
+            <AvatarFallback className="bg-primary text-primary-foreground">
+              <Bot className="h-4 w-4" />
+            </AvatarFallback>
+          </Avatar>
+        )}
+
+        <div className={cn("max-w-[80%] space-y-2", isUser && "order-first")}>
+          <Card
+            className={cn(
+              "p-4",
+              isUser
+                ? "bg-primary text-primary-foreground ml-auto"
+                : "bg-card/50 border-border/50 text-foreground"
+            )}
+          >
+            {renderMessageContent(message.message)}
+
+            {/* Source Citations */}
+            {messageReferences.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-border/50">
+                <p className="text-xs text-muted-foreground mb-2">Sources:</p>
+                <div className="flex flex-wrap gap-2">
+                  {messageReferences.map((ref, index) => (
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="text-xs bg-secondary text-secondary-foreground hover:bg-secondary/80 cursor-pointer"
+                      title={`${ref.section} • ${ref.start} → ${
+                        ref.end
+                      } • Score: ${(ref.score * 100).toFixed(1)}%`}
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      {ref.file}
+                      <ExternalLink className="h-3 w-3 ml-1" />
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* Message Actions - Read-only for archived messages */}
+          {!isUser && (
+            <div className="flex items-center gap-2 px-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleCopy(message.message)}
+                className="h-6 px-2 text-muted-foreground hover:text-foreground hover:bg-accent"
+                title="Copy message"
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleSpeak(message)}
+                className="h-6 px-2 text-muted-foreground hover:text-foreground hover:bg-accent"
+                title={isSpeaking ? "Stop audio" : "Listen to message"}
+              >
+                {isSpeaking ? (
+                  <Square className="h-3 w-3" />
+                ) : (
+                  <Volume2 className="h-3 w-3" />
+                )}
+              </Button>
+              <span className="text-xs text-muted-foreground ml-2">
+                {new Date(message.timestamp).toLocaleTimeString()}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {isUser && (
+          <Avatar className="h-8 w-8 flex-shrink-0">
+            <AvatarFallback className="bg-secondary text-secondary-foreground">
+              <User className="h-4 w-4" />
+            </AvatarFallback>
+          </Avatar>
+        )}
+      </div>
+    );
+  };
+
   if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p>Loading archived conversation...</p>
@@ -314,81 +566,30 @@ export default function ArchivedConversationPage() {
 
         {/* Main Content Area */}
         <div className="flex-1 flex min-w-0">
-          {/* Chat Interface */}
+          {/* Messages Display */}
           <div className="flex-1 flex flex-col">
-            {/* <ChatInterface
-              sources={[]}
-              conversationId={archive?.conversationId}
-              showHeader={false}
-              readOnly={true}
-              initialMessages={messages}
-            /> */}
-          </div>
-
-          {/* References Panel */}
-          {allReferences.length > 0 && (
-            <div className="w-80 bg-background/50 border-l border-border/50 p-4 overflow-y-auto backdrop-blur-md">
-              <h3 className="text-foreground text-sm font-medium mb-4 flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                References
-              </h3>
-              <p className="text-muted-foreground text-xs text-center py-8">
-                {allReferences.length} source
-                {allReferences.length !== 1 ? "s" : ""} referenced in this
-                conversation
-              </p>
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                {allReferences.map((ref, index) => (
-                  <div
-                    key={index}
-                    className="bg-card/50 border border-border/50 rounded-lg p-3 hover:bg-card/70 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <FileText className="h-4 w-4 text-primary flex-shrink-0" />
-                        <div className="text-sm text-foreground font-medium truncate">
-                          {ref.file}
-                        </div>
-                      </div>
-                      <Badge
-                        variant="secondary"
-                        className="text-xs bg-secondary text-secondary-foreground ml-2"
-                      >
-                        {ref.usageCount}x
-                      </Badge>
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className="text-muted-foreground text-xs">
-                        <span className="font-medium">Section:</span>{" "}
-                        {ref.section}
-                      </div>
-                      <div className="text-muted-foreground text-xs">
-                        <span className="font-medium">Time:</span>{" "}
-                        {ref.timeRange}
-                      </div>
-                      {ref.score && (
-                        <div className="text-muted-foreground text-xs">
-                          <span className="font-medium">Relevance:</span>{" "}
-                          {(ref.score * 100).toFixed(1)}%
-                        </div>
-                      )}
-                    </div>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full mt-2 text-muted-foreground hover:text-foreground hover:bg-accent justify-start"
-                      onClick={() => window.open(ref.url, "_blank")}
-                    >
-                      <ExternalLink className="h-3 w-3 mr-2" />
-                      View in source
-                    </Button>
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {messages.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center p-8">
+                  <div className="text-center">
+                    <Archive className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-foreground text-lg mb-2">
+                      No messages found
+                    </h3>
+                    <p className="text-muted-foreground text-sm">
+                      This archived conversation appears to be empty.
+                    </p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="space-y-0">
+                  {messages.map((message) => (
+                    <MessageBubble key={message.id} message={message} />
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
 
