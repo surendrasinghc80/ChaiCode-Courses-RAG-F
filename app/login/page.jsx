@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from "lucide-react";
-// import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -165,7 +165,7 @@ export default function LoginPage() {
               <ArrowLeft className="h-4 w-4" />
               Back to NotebookLM
             </Link>
-            {/* <ThemeToggle /> */}
+            <ThemeToggle className="text-white hover:bg-white/10" />
           </div>
 
           <Card className="border-white/20 bg-black/30 backdrop-blur-xl shadow-2xl">

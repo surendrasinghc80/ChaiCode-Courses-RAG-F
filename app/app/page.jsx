@@ -7,8 +7,6 @@ import {
   // Share,
   LogOut,
   Brain,
-  Moon,
-  Sun,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -19,18 +17,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useTheme } from "next-themes";
 import { signOut, useSession } from "next-auth/react";
 import { AddSourcesModal } from "@/components/add-sources-modal";
 import { ChatInterface } from "@/components/chat-interface";
 import ChatSidebar from "@/components/chat-sidebar";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useRouter } from "next/navigation";
 // import { StudioPanel } from "@/components/studio-panel";
 
 function NotebookLMContent() {
   const [showAddSources, setShowAddSources] = useState(false);
   const [sources, setSources] = useState([]);
-  const { theme, setTheme } = useTheme();
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -117,32 +114,23 @@ function NotebookLMContent() {
           }}
         />
       </div>
-      <div className="fixed inset-0 bg-background/50 backdrop-blur-md z-10" />
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-10" />
 
       {/* Main content */}
       <div className="relative z-10 flex flex-col h-screen">
         {/* Header */}
-        <header className="flex items-center justify-between p-4 border-b border-white/10">
+        <header className="flex items-center justify-between p-4 border-b border-border/20">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <img src="/icon.svg" alt="ChaiCode RAG" className="h-8 w-8" />
-              <h1 className="text-white text-lg font-medium">ChaiCode RAG</h1>
+              <h1 className="text-foreground text-lg font-medium">
+                ChaiCode RAG
+              </h1>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="text-white hover:bg-white/10"
-            >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </Button>
+            <ThemeToggle className="text-foreground hover:bg-accent" />
             {/* <Button
                 variant="ghost"
                 size="sm"
@@ -168,31 +156,27 @@ function NotebookLMContent() {
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="https://github.com/shadcn.png" />
-                    <AvatarFallback className="bg-white/20 text-white">
+                    <AvatarFallback className="bg-muted text-muted-foreground">
                       {session?.user?.name?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-56 bg-gray-900 border-gray-700"
-                align="end"
-                forceMount
-              >
+              <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none text-white">
+                    <p className="text-sm font-medium leading-none">
                       {session?.user?.name || "User"}
                     </p>
-                    <p className="text-xs leading-none text-gray-400">
+                    <p className="text-xs leading-none text-muted-foreground">
                       {session?.user?.email || "No email"}
                     </p>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-gray-700" />
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleLogout}
-                  className="text-white hover:bg-gray-800 cursor-pointer"
+                  className="cursor-pointer"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>

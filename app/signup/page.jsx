@@ -25,7 +25,7 @@ import {
   MapPin,
   Calendar,
 } from "lucide-react";
-// import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { AuthenticationApi } from "@/ApiConstants";
 
 export default function SignupPage() {
@@ -295,7 +295,7 @@ export default function SignupPage() {
               <ArrowLeft className="h-4 w-4" />
               Back to NotebookLM
             </Link>
-            {/* <ThemeToggle /> */}
+            <ThemeToggle className="text-white hover:bg-white/10" />
           </div>
 
           <Card className="border-white/20 bg-black/30 backdrop-blur-xl shadow-2xl">
