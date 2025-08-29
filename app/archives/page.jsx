@@ -88,7 +88,7 @@ export default function ArchivesPage() {
     
     switch (action) {
       case "view":
-        router.push(`/archives/${archive.id}`);
+        router.push(`/conversation/${archive.conversationId}`);
         break;
       case "edit":
         // TODO: Implement edit modal

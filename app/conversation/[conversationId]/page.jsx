@@ -1,12 +1,45 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { ChatInterface } from "@/components/chat-interface";
 import ChatSidebar from "@/components/chat-sidebar";
+import { Badge } from "@/components/ui/badge";
+import { Archive } from "lucide-react";
+import { getArchivedConversationByConversationId } from "@/lib/api";
 
 export default function ConversationPage() {
   const params = useParams();
+  const { data: session } = useSession();
   const conversationId = params.conversationId;
+  const [isArchived, setIsArchived] = useState(false);
+  const [archiveInfo, setArchiveInfo] = useState(null);
+
+  useEffect(() => {
+    const checkIfArchived = async () => {
+      if (session && conversationId) {
+        try {
+          const response = await getArchivedConversationByConversationId(
+            conversationId
+          );
+          if (response.success && response.data) {
+            setIsArchived(true);
+            setArchiveInfo(response.data);
+          } else {
+            setIsArchived(false);
+            setArchiveInfo(null);
+          }
+        } catch (error) {
+          console.error("Error checking archive status:", error);
+          setIsArchived(false);
+          setArchiveInfo(null);
+        }
+      }
+    };
+
+    checkIfArchived();
+  }, [session, conversationId]);
 
   const handleNewChat = async () => {
     try {
@@ -76,7 +109,20 @@ export default function ConversationPage() {
           {/* Header */}
           <div className="p-4 border-b border-white/10 flex-shrink-0">
             <div className="flex items-center justify-between">
-              <h2 className="text-white text-lg font-medium">Chat</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-white text-lg font-medium">
+                  {isArchived && archiveInfo ? archiveInfo.title : "Chat"}
+                </h2>
+                {isArchived && (
+                  <Badge
+                    variant="outline"
+                    className="text-white border-white/20"
+                  >
+                    <Archive className="h-3 w-3 mr-1" />
+                    Archived
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 {/* <div className="text-white/60 text-sm">
                   Conversation ID: {conversationId}
@@ -84,7 +130,9 @@ export default function ConversationPage() {
               </div>
             </div>
             <p className="text-white/40 text-xs mt-1">
-              RAG system ready • Ask questions about your sources
+              {isArchived
+                ? "This is an archived conversation • Messages are read-only"
+                : "RAG system ready • Ask questions about your sources"}
             </p>
           </div>
 
@@ -92,6 +140,7 @@ export default function ConversationPage() {
             sources={[]}
             conversationId={conversationId}
             showHeader={false}
+            readOnly={isArchived}
           />
         </div>
       </div>

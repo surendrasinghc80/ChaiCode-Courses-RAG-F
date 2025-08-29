@@ -6,7 +6,14 @@ import { useEffect, useState } from "react";
 import { ChatInterface } from "@/components/chat-interface";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Archive, Calendar, MessageSquare, Tag, Edit } from "lucide-react";
+import {
+  ArrowLeft,
+  Archive,
+  Calendar,
+  MessageSquare,
+  Tag,
+  Edit,
+} from "lucide-react";
 import { getArchivedConversation } from "@/lib/api";
 
 export default function ArchivedConversationPage() {
@@ -21,7 +28,7 @@ export default function ArchivedConversationPage() {
 
   useEffect(() => {
     if (status === "loading") return;
-    
+
     if (!session) {
       router.push("/login");
       return;
@@ -38,11 +45,15 @@ export default function ArchivedConversationPage() {
         setArchive(response.data.archive);
         setMessages(response.data.messages || []);
       } else {
-        setError("Archived conversation not found or you don't have access to it.");
+        setError(
+          "Archived conversation not found or you don't have access to it."
+        );
       }
     } catch (err) {
       console.error("Failed to load archived conversation:", err);
-      setError("Failed to load archived conversation. It may be deleted or inaccessible.");
+      setError(
+        "Failed to load archived conversation. It may be deleted or inaccessible."
+      );
     } finally {
       setLoading(false);
     }
@@ -80,7 +91,10 @@ export default function ArchivedConversationPage() {
           <Archive className="h-16 w-16 mx-auto mb-4 text-red-400" />
           <h1 className="text-2xl font-bold mb-2">Archive Not Found</h1>
           <p className="text-white/80 mb-6">{error}</p>
-          <Button onClick={() => router.push("/archives")} className="bg-blue-600 hover:bg-blue-700">
+          <Button
+            onClick={() => router.push("/archives")}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Archives
           </Button>
@@ -209,9 +223,9 @@ export default function ArchivedConversationPage() {
 
         {/* Chat Interface */}
         <div className="flex-1 flex flex-col min-w-0">
-          <ChatInterface 
-            sources={[]} 
-            conversationId={archive?.conversationId} 
+          <ChatInterface
+            sources={[]}
+            conversationId={archive?.conversationId}
             showHeader={false}
             readOnly={true}
             initialMessages={messages}
