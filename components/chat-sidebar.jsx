@@ -167,7 +167,7 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
         try {
           const response = await archiveConversation(conversation.id, {
             title: conversation.title,
-            description: `Archived conversation from ${new Date().toLocaleDateString()}`
+            description: `Archived conversation from ${new Date().toLocaleDateString()}`,
           });
           if (response.success) {
             await loadConversations(); // Refresh the list
@@ -201,7 +201,11 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
   const navigationItems = [
     { icon: Plus, label: "New chat", onClick: handleNewChat },
     { icon: Search, label: "Search chats", onClick: () => {} },
-    { icon: Library, label: "Archives", onClick: () => window.location.href = "/archives" },
+    {
+      icon: Library,
+      label: "Archives",
+      onClick: () => (window.location.href = "/archives"),
+    },
   ];
 
   const bottomItems = [
@@ -210,12 +214,12 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
   ];
 
   return (
-    <div className="w-80 bg-black/20 backdrop-blur-sm text-white flex flex-col h-full border-r border-white/10">
+    <div className="w-80 bg-card/50 backdrop-blur-sm flex flex-col h-full border-r border-border/50">
       {/* Header */}
-      <div className="p-4 border-b border-white/10">
+      <div className="p-4 border-b border-border/50">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-6 h-6 rounded-sm bg-zinc-800 flex items-center justify-center">
-            <img src="/icon.svg" alt="Icon" className="h-4 w-4 text-gray-900" />
+          <div className="w-6 h-6 rounded-sm bg-muted flex items-center justify-center">
+            <img src="/icon.svg" alt="Icon" className="h-4 w-4" />
           </div>
         </div>
 
@@ -225,7 +229,7 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
             <Button
               key={index}
               variant="ghost"
-              className="w-full justify-start text-gray-300 hover:bg-gray-800 hover:text-white"
+              className="w-full justify-start text-muted-foreground hover:bg-accent hover:text-foreground"
               onClick={item.onClick}
             >
               <item.icon className="h-4 w-4 mr-3" />
@@ -236,14 +240,14 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
       </div>
 
       {/* Search */}
-      <div className="p-4 border-b border-white/10">
+      <div className="p-4 border-b border-border/50">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search chats"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-gray-500"
+            className="pl-10 bg-background/50 border-border text-foreground placeholder-muted-foreground focus:border-primary"
           />
         </div>
       </div>
@@ -251,14 +255,16 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
       {/* Chats Section */}
       <div className="flex-1 overflow-hidden">
         <div className="p-4">
-          <h3 className="text-sm font-medium text-gray-400 mb-3">Chats</h3>
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">
+            Chats
+          </h3>
         </div>
 
         <ScrollArea className="flex-1 px-2 [&>div>div]:!block">
-          <div className="space-y-1 pb-4 max-h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+          <div className="space-y-1 pb-4 max-h-full overflow-y-auto">
             {loading && (
               <div className="flex items-center justify-center py-8">
-                <div className="text-white/60 text-sm">
+                <div className="text-muted-foreground text-sm">
                   Loading conversations...
                 </div>
               </div>
@@ -266,7 +272,7 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
 
             {error && (
               <div className="flex items-center justify-center py-4">
-                <div className="text-red-400 text-sm text-center">
+                <div className="text-destructive text-sm text-center">
                   <div>Failed to load conversations</div>
                   <button
                     onClick={loadConversations}
@@ -280,7 +286,7 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
 
             {!loading && !error && filteredConversations.length === 0 && (
               <div className="flex items-center justify-center py-8">
-                <div className="text-white/60 text-sm text-center">
+                <div className="text-muted-foreground text-sm text-center">
                   {searchQuery
                     ? "No conversations found"
                     : "No conversations yet"}
@@ -304,8 +310,8 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
                   <Button
                     variant="ghost"
                     className={cn(
-                      "w-full justify-start text-left p-3 h-auto hover:bg-gray-800",
-                      currentChatId === conversation.id ? "bg-gray-800" : ""
+                      "w-full justify-start text-left p-3 h-auto hover:bg-accent",
+                      currentChatId === conversation.id ? "bg-accent" : ""
                     )}
                     onClick={() => {
                       // Navigate to conversation page
@@ -313,10 +319,10 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
                     }}
                   >
                     <div className="flex-1 min-w-0 pr-8">
-                      <div className="text-sm font-medium text-white truncate mb-1">
+                      <div className="text-sm font-medium text-foreground truncate mb-1">
                         {conversation.title}
                       </div>
-                      <div className="text-xs text-gray-400 truncate">
+                      <div className="text-xs text-muted-foreground truncate">
                         {conversation.lastMessage}
                       </div>
                     </div>
@@ -339,7 +345,7 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <MoreHorizontal className="h-4 w-4" />
@@ -347,14 +353,14 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
                           align="end"
-                          className="w-48 bg-gray-800 border-gray-600"
+                          className="w-48 bg-popover border-border"
                           onCloseAutoFocus={(e) => e.preventDefault()}
                         >
                           <DropdownMenuItem
                             onClick={(e) =>
                               handleMenuAction("share", conversation, e)
                             }
-                            className="text-white hover:bg-gray-700 cursor-pointer"
+                            className="text-foreground hover:bg-accent cursor-pointer"
                           >
                             <Share className="mr-2 h-4 w-4" />
                             Share
@@ -363,7 +369,7 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
                             onClick={(e) =>
                               handleMenuAction("rename", conversation, e)
                             }
-                            className="text-white hover:bg-gray-700 cursor-pointer"
+                            className="text-foreground hover:bg-accent cursor-pointer"
                           >
                             <Edit className="mr-2 h-4 w-4" />
                             Rename
@@ -372,7 +378,7 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
                             onClick={(e) =>
                               handleMenuAction("archive", conversation, e)
                             }
-                            className="text-white hover:bg-gray-700 cursor-pointer"
+                            className="text-foreground hover:bg-accent cursor-pointer"
                           >
                             <Archive className="mr-2 h-4 w-4" />
                             Archive
@@ -381,7 +387,7 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
                             onClick={(e) =>
                               handleMenuAction("delete", conversation, e)
                             }
-                            className="text-red-400 hover:bg-gray-700 cursor-pointer"
+                            className="text-destructive hover:bg-accent cursor-pointer"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
@@ -397,22 +403,24 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
       </div>
 
       {/* User Profile */}
-      <div className="p-4 border-t border-white/10">
+      <div className="p-4 border-t border-border/50">
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
             <AvatarImage src="/placeholder-avatar.jpg" />
-            <AvatarFallback className="bg-green-600 text-white text-sm">
+            <AvatarFallback className="bg-primary text-primary-foreground text-sm">
               SS
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-white">Surendra singh</div>
-            <div className="text-xs text-gray-400">Free</div>
+            <div className="text-sm font-medium text-foreground">
+              Surendra singh
+            </div>
+            <div className="text-xs text-muted-foreground">Free</div>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            className="text-gray-400 hover:text-white"
+            className="text-muted-foreground hover:text-foreground"
           >
             <Settings className="h-4 w-4" />
           </Button>

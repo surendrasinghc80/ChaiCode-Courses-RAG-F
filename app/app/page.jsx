@@ -114,12 +114,12 @@ function NotebookLMContent() {
           }}
         />
       </div>
-      <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-10" />
+      <div className="fixed inset-0 bg-background/70 backdrop-blur-md z-10" />
 
       {/* Main content */}
       <div className="relative z-10 flex flex-col h-screen">
         {/* Header */}
-        <header className="flex items-center justify-between p-4 border-b border-border/20">
+        <header className="flex items-center justify-between p-4 border-b border-border/50 backdrop-blur-md bg-background/50">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <img src="/icon.svg" alt="ChaiCode RAG" className="h-8 w-8" />
@@ -130,7 +130,7 @@ function NotebookLMContent() {
           </div>
 
           <div className="flex items-center gap-2">
-            <ThemeToggle className="text-foreground hover:bg-accent" />
+            <ThemeToggle />
             {/* <Button
                 variant="ghost"
                 size="sm"

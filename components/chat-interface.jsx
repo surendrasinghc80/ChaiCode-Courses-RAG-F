@@ -38,26 +38,26 @@ const TypingIndicator = ({ stage = "thinking" }) => {
   return (
     <div className="flex items-center gap-2 p-4">
       <Avatar className="h-8 w-8">
-        <AvatarFallback className="bg-blue-600 text-white">
+        <AvatarFallback className="bg-primary text-primary-foreground">
           <Bot className="h-4 w-4" />
         </AvatarFallback>
       </Avatar>
       <div className="flex items-center gap-3">
         <div className="flex gap-1">
           <div
-            className="w-2 h-2 bg-white/40 rounded-full animate-bounce"
+            className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce"
             style={{ animationDelay: "0ms" }}
           />
           <div
-            className="w-2 h-2 bg-white/40 rounded-full animate-bounce"
+            className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce"
             style={{ animationDelay: "150ms" }}
           />
           <div
-            className="w-2 h-2 bg-white/40 rounded-full animate-bounce"
+            className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce"
             style={{ animationDelay: "300ms" }}
           />
         </div>
-        <span className="text-white/60 text-sm">{stages[stage]}</span>
+        <span className="text-muted-foreground text-sm">{stages[stage]}</span>
         {stage === "searching" && (
           <Search className="h-4 w-4 text-blue-400 animate-pulse" />
         )}
@@ -123,7 +123,7 @@ const MessageBubble = ({
     >
       {!isUser && (
         <Avatar className="h-8 w-8 flex-shrink-0">
-          <AvatarFallback className="bg-blue-600 text-white">
+          <AvatarFallback className="bg-primary text-primary-foreground">
             <Bot className="h-4 w-4" />
           </AvatarFallback>
         </Avatar>
@@ -134,22 +134,22 @@ const MessageBubble = ({
           className={cn(
             "p-4",
             isUser
-              ? "bg-blue-600 text-white ml-auto"
-              : "bg-white/10 border-white/20 text-white"
+              ? "bg-primary text-primary-foreground ml-auto"
+              : "bg-card/50 border-border/50 text-foreground"
           )}
         >
           {renderMessageContent(message.content)}
 
           {/* Source Citations */}
           {message.sources && message.sources.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-white/20">
-              <p className="text-xs text-white/60 mb-2">Sources:</p>
+            <div className="mt-3 pt-3 border-t border-border/50">
+              <p className="text-xs text-muted-foreground mb-2">Sources:</p>
               <div className="flex flex-wrap gap-2">
                 {message.sources.map((source, index) => (
                   <Badge
                     key={index}
                     variant="secondary"
-                    className="text-xs bg-white/20 text-white hover:bg-white/30 cursor-pointer"
+                    className="text-xs bg-secondary text-secondary-foreground hover:bg-secondary/80 cursor-pointer"
                   >
                     <FileText className="h-3 w-3 mr-1" />
                     {source.name}
@@ -168,7 +168,7 @@ const MessageBubble = ({
               variant="ghost"
               size="sm"
               onClick={() => onCopy(message.content)}
-              className="h-6 px-2 text-white/60 hover:text-white hover:bg-white/10"
+              className="h-6 px-2 text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <Copy className="h-3 w-3" />
             </Button>
@@ -176,7 +176,7 @@ const MessageBubble = ({
               variant="ghost"
               size="sm"
               onClick={() => onSpeak(message)}
-              className="h-6 px-2 text-white/60 hover:text-white hover:bg-white/10"
+              className="h-6 px-2 text-muted-foreground hover:text-foreground hover:bg-accent"
               aria-label={isSpeaking ? "Stop audio" : "Play audio"}
               title={isSpeaking ? "Stop" : "Listen"}
             >
@@ -190,7 +190,7 @@ const MessageBubble = ({
               variant="ghost"
               size="sm"
               onClick={() => onRegenerate(message.id)}
-              className="h-6 px-2 text-white/60 hover:text-white hover:bg-white/10"
+              className="h-6 px-2 text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <RefreshCw className="h-3 w-3" />
             </Button>
@@ -198,7 +198,7 @@ const MessageBubble = ({
               variant="ghost"
               size="sm"
               onClick={() => onFeedback(message.id, "up")}
-              className="h-6 px-2 text-white/60 hover:text-white hover:bg-white/10"
+              className="h-6 px-2 text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <ThumbsUp className="h-3 w-3" />
             </Button>
@@ -206,7 +206,7 @@ const MessageBubble = ({
               variant="ghost"
               size="sm"
               onClick={() => onFeedback(message.id, "down")}
-              className="h-6 px-2 text-white/60 hover:text-white hover:bg-white/10"
+              className="h-6 px-2 text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <ThumbsDown className="h-3 w-3" />
             </Button>
@@ -216,7 +216,7 @@ const MessageBubble = ({
 
       {isUser && (
         <Avatar className="h-8 w-8 flex-shrink-0">
-          <AvatarFallback className="bg-gray-600 text-white">
+          <AvatarFallback className="bg-secondary text-secondary-foreground">
             <User className="h-4 w-4" />
           </AvatarFallback>
         </Avatar>
@@ -458,7 +458,9 @@ export function ChatInterface({
       setTimeout(async () => {
         setTypingStage("generating");
 
-        const backend = await askQuestion(userMessage.content, { conversationId });
+        const backend = await askQuestion(userMessage.content, {
+          conversationId,
+        });
         const newAiMessage = {
           id: Date.now(),
           role: "assistant",
@@ -605,15 +607,18 @@ export function ChatInterface({
   const canSendMessage = inputValue.trim().length > 0 && !isTyping;
 
   return (
-    <div className="flex flex-col w-full h-full bg-black/20 backdrop-blur-sm">
+    <div className="flex flex-col w-full h-full bg-card/50 backdrop-blur-sm">
       {/* Header - conditionally rendered */}
       {showHeader && (
-        <div className="p-4 border-b border-white/10 flex-shrink-0">
+        <div className="p-4 border-b border-border/50 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <h2 className="text-white text-lg font-medium">Chat</h2>
+            <h2 className="text-foreground text-lg font-medium">Chat</h2>
             <div className="flex items-center gap-2">
               {processedSources.length > 0 && (
-                <Badge variant="outline" className="text-white border-white/20">
+                <Badge
+                  variant="outline"
+                  className="text-foreground border-border"
+                >
                   {processedSources.length} source
                   {processedSources.length !== 1 ? "s" : ""} ready
                 </Badge>
@@ -622,7 +627,7 @@ export function ChatInterface({
           </div>
           {ragStats && (
             <div>
-              <p className="text-white/40 text-xs mt-1">
+              <p className="text-muted-foreground text-xs mt-1">
                 RAG system ready • {ragStats.avgChunkSize} avg words per chunk
               </p>
             </div>
@@ -635,11 +640,11 @@ export function ChatInterface({
         {!hasMessages && sources.length === 0 ? (
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center">
-              <MessageSquare className="h-12 w-12 text-white/40 mx-auto mb-4" />
-              <h3 className="text-white text-lg mb-2">
+              <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-foreground text-lg mb-2">
                 Add sources to get started
               </h3>
-              <p className="text-white/60 text-sm mb-4">
+              <p className="text-muted-foreground text-sm mb-4">
                 Upload documents, add websites, or paste text to begin chatting
                 with your content using RAG.
               </p>
@@ -648,11 +653,11 @@ export function ChatInterface({
         ) : !hasMessages && processedSources.length === 0 ? (
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center">
-              <AlertCircle className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
-              <h3 className="text-white text-lg mb-2">
+              <AlertCircle className="h-12 w-12 text-warning mx-auto mb-4" />
+              <h3 className="text-foreground text-lg mb-2">
                 Sources are processing
               </h3>
-              <p className="text-white/60 text-sm mb-4">
+              <p className="text-muted-foreground text-sm mb-4">
                 Please wait while your sources are being processed for chat.
                 This usually takes a few moments.
               </p>
@@ -667,11 +672,11 @@ export function ChatInterface({
         ) : !hasMessages ? (
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center">
-              <Bot className="h-12 w-12 text-blue-400 mx-auto mb-4" />
-              <h3 className="text-white text-lg mb-2">
+              <Bot className="h-12 w-12 text-primary mx-auto mb-4" />
+              <h3 className="text-foreground text-lg mb-2">
                 Ready to chat with your sources!
               </h3>
-              <p className="text-white/60 text-sm mb-4">
+              <p className="text-muted-foreground text-sm mb-4">
                 Ask questions about your {processedSources.length} processed
                 source
                 {processedSources.length !== 1 ? "s" : ""}. I'll search through
@@ -686,7 +691,7 @@ export function ChatInterface({
                       "What are the main topics covered in my sources?"
                     )
                   }
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  className="bg-secondary/50 border-border text-foreground hover:bg-secondary"
                 >
                   Summarize main topics
                 </Button>
@@ -698,7 +703,7 @@ export function ChatInterface({
                       "What are the key insights from my documents?"
                     )
                   }
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  className="bg-secondary/50 border-border text-foreground hover:bg-secondary"
                 >
                   Find key insights
                 </Button>
@@ -708,7 +713,7 @@ export function ChatInterface({
                   onClick={() =>
                     setInputValue("How do my sources relate to each other?")
                   }
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  className="bg-secondary/50 border-border text-foreground hover:bg-secondary"
                 >
                   Find connections
                 </Button>
@@ -736,7 +741,7 @@ export function ChatInterface({
 
       {/* Input Area - Hidden in read-only mode */}
       {!readOnly && (
-        <div className="p-4 border-t border-white/10 flex-shrink-0">
+        <div className="p-4 border-t border-border/50 flex-shrink-0">
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <textarea
@@ -749,7 +754,7 @@ export function ChatInterface({
                     ? "Ask any question or upload sources for RAG-powered responses..."
                     : "Ask questions about your sources..."
                 }
-                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 resize-none min-h-[44px] max-h-32"
+                className="w-full bg-background/50 border border-border rounded-lg px-4 py-3 text-foreground placeholder-muted-foreground resize-none min-h-[44px] max-h-32"
                 disabled={false}
                 rows={1}
                 style={{
@@ -767,12 +772,12 @@ export function ChatInterface({
               size="sm"
               onClick={handleSend}
               disabled={!canSendMessage}
-              className="bg-blue-600 hover:bg-blue-700 mb-2 disabled:bg-gray-600 h-11 px-4"
+              className="bg-primary hover:bg-primary/90 mb-2 disabled:bg-muted h-11 px-4"
             >
               <Send className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-white/40 text-xs mt-2 text-center">
+          <p className="text-muted-foreground text-xs mt-2 text-center">
             RAG-powered responses based on couses sub-titles • ChaiCode - RAG
             can be inaccurate, please double-check responses.
           </p>

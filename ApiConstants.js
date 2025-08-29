@@ -26,3 +26,11 @@ export const ArchiveApi = {
   DeleteArchivedConversation: "/conversations/archives/:archiveId", // DELETE
   UnarchiveConversation: "/conversations/archives/:archiveId/unarchive", // POST
 };
+
+export const AdminApi = {
+  GetAllUsers: "/admin/users", // GET - with query params: page, limit, search, role
+  GetUserDetails: "/admin/users/:userId", // GET
+  ToggleUserAccess: "/admin/users/:userId/access", // PATCH - body: { isActive: boolean }
+  ResetUserMessageCount: "/admin/users/:userId/reset-messages", // PATCH
+  GetPlatformStats: "/admin/stats", // GET
+};

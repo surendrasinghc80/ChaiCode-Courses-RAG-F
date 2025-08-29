@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,13 +40,19 @@ export default function LoginPage() {
         redirect: false,
         email: formData.email,
         password: formData.password,
-        callbackUrl,
       });
 
       if (result?.error) {
         setError("Invalid email or password. Please try again.");
       } else if (result?.ok) {
-        window.location.href = result.url || callbackUrl || "/app";
+        // Get the session to check user role
+        const session = await getSession();
+
+        if (session?.user?.role === "admin") {
+          window.location.href = "/dashboard";
+        } else {
+          window.location.href = "/app";
+        }
       }
     } catch (err) {
       setError("Invalid email or password. Please try again.");
@@ -62,113 +68,54 @@ export default function LoginPage() {
     }));
   };
 
-  // Background image rotation
-  const images = useMemo(
-    () => [
-      "/gradiant-bg-1.jpg",
-      "/gradiant-bg-2.jpg",
-      "/gradiant-bg-3.jpg",
-      "/gradiant-bg-4.jpg",
-      "/gradiant-bg-5.jpg",
-      "/gradiant-bg-6.jpg",
-      "/gradiant-bg-7.jpg",
-      "/gradiant-bg-8.jpg",
-      "/gradiant-bg-9.jpg",
-      "/gradiant-bg-10.jpg",
-      "/gradiant-bg-11.jpg",
-      "/gradiant-bg-12.jpg",
-    ],
-    []
-  );
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [nextIndex, setNextIndex] = useState(1);
-  const [fading, setFading] = useState(false);
-  const ROTATE_MS = 6000;
-  const FADE_MS = 1000;
-  const fadeTimeoutRef = useRef(null);
-  const cycleTimeoutRef = useRef(null);
-  const currentIndexRef = useRef(0);
-
-  useEffect(() => {
-    currentIndexRef.current = currentIndex;
-  }, [currentIndex]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const runCycle = () => {
-      if (cancelled) return;
-      const ni = (currentIndexRef.current + 1) % images.length;
-      const preload = new Image();
-
-      const triggerFade = () => {
-        if (cancelled) return;
-        setNextIndex(ni);
-        setFading(true);
-        if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
-        fadeTimeoutRef.current = setTimeout(() => {
-          if (cancelled) return;
-          setCurrentIndex(ni);
-          setFading(false);
-          cycleTimeoutRef.current = setTimeout(runCycle, ROTATE_MS);
-        }, FADE_MS);
-      };
-
-      preload.src = images[ni];
-      if (preload.decode) {
-        preload
-          .decode()
-          .then(triggerFade)
-          .catch(() => {
-            preload.onload = triggerFade;
-          });
-      } else {
-        preload.onload = triggerFade;
-      }
-    };
-
-    cycleTimeoutRef.current = setTimeout(runCycle, ROTATE_MS);
-
-    return () => {
-      cancelled = true;
-      if (cycleTimeoutRef.current) clearTimeout(cycleTimeoutRef.current);
-      if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
-    };
-  }, [images]);
-
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Background Images */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000"
-        style={{
-          backgroundImage: `url(${images[currentIndex]})`,
-          opacity: fading ? 0 : 1,
-        }}
-      />
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000"
-        style={{
-          backgroundImage: `url(${images[nextIndex]})`,
-          opacity: fading ? 1 : 0,
-        }}
-      />
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+      {/* Background Video */}
+      <div className="fixed inset-0 z-0">
+        <video
+          className="w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          onLoadedData={(e) => {
+            e.currentTarget.play().catch(console.error);
+          }}
+        >
+          <source
+            src="https://firebasestorage.googleapis.com/v0/b/project-x-e3c38.appspot.com/o/animation-video%2Flanding-page-video.mp4?alt=media&token=3528e1cb-c8a5-4c8b-a37f-97f1e7c87e49"
+            type="video/mp4"
+          />
+        </video>
+        {/* Enhanced fallback background with animated gradient */}
+        <div
+          className="absolute inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 animate-pulse"
+          style={{
+            backgroundImage: `
+              radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%)
+            `,
+          }}
+        />
+      </div>
+      <div className="fixed inset-0 bg-background/70 backdrop-blur-md z-10" />
 
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
           <div className="flex items-center justify-between">
             <Link
               href="/"
-              className="flex items-center gap-2 text-sm text-white hover:text-foreground transition-colors"
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to NotebookLM
+              Back to ChaiCode RAG
             </Link>
-            <ThemeToggle className="text-white hover:bg-white/10" />
+            <ThemeToggle />
           </div>
 
-          <Card className="border-white/20 bg-black/30 backdrop-blur-xl shadow-2xl">
+          <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-2xl">
             <CardHeader className="space-y-1 text-center">
               <CardTitle className="text-2xl font-semibold">
                 Welcome back
