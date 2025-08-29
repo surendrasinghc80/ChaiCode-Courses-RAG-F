@@ -3,9 +3,9 @@
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { ChatInterface } from "@/components/chat-interface";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -19,13 +19,18 @@ import {
 import {
   ArrowLeft,
   Archive,
+  Edit,
   Calendar,
   MessageSquare,
   Tag,
-  Edit,
-  FileText,
   ExternalLink,
+  FileText,
+  Video,
+  Link,
+  Save,
+  X,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { getArchivedConversation, updateArchivedConversation } from "@/lib/api";
 
 export default function ArchivedConversationPage() {
@@ -38,7 +43,7 @@ export default function ArchivedConversationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [allReferences, setAllReferences] = useState([]);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     title: "",
     description: "",
@@ -122,7 +127,7 @@ export default function ArchivedConversationPage() {
           description: editForm.description,
           tags: editForm.tags,
         }));
-        setEditDialogOpen(false);
+        setIsEditDialogOpen(false);
       } else {
         console.error("Failed to update archive:", response.message);
       }
@@ -169,13 +174,13 @@ export default function ArchivedConversationPage() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
-        <div className="text-white text-center max-w-md">
-          <Archive className="h-16 w-16 mx-auto mb-4 text-red-400" />
-          <h1 className="text-2xl font-bold mb-2">Archive Not Found</h1>
-          <p className="text-white/80 mb-6">{error}</p>
+        <div className="text-center">
+          <Archive className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-foreground text-xl mb-2">No archive found</h3>
+          <p className="text-muted-foreground text-sm mb-6">{error}</p>
           <Button
             onClick={() => router.push("/archives")}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-primary hover:bg-primary/90"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Archives
@@ -216,53 +221,60 @@ export default function ArchivedConversationPage() {
           }}
         />
       </div>
-      <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-10" />
+      <div className="fixed inset-0 bg-background/70 backdrop-blur-md z-10" />
 
       {/* Main content */}
       <div className="relative z-10 flex flex-col h-screen">
         {/* Header */}
-        <div className="p-4 border-b border-white/10 flex-shrink-0 bg-black/20 backdrop-blur-sm">
+        <div className="p-4 border-b border-border/50 flex-shrink-0 bg-background/50 backdrop-blur-md">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => router.push("/archives")}
-                className="text-white hover:bg-white/10"
+                className="text-muted-foreground hover:text-foreground hover:bg-accent"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Archives
               </Button>
               <div>
-                <h1 className="text-white text-lg font-medium flex items-center gap-2">
-                  <Archive className="h-5 w-5" />
+                <h1 className="text-foreground text-lg font-medium flex items-center gap-2">
                   {archive?.title}
                 </h1>
                 {archive?.description && (
-                  <p className="text-white/60 text-sm">{archive.description}</p>
+                  <p className="text-muted-foreground text-sm">
+                    {archive.description}
+                  </p>
                 )}
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-white border-white/20">
+              <Badge
+                variant="outline"
+                className="text-foreground border-border"
+              >
                 <Archive className="h-3 w-3 mr-1" />
                 Archived
               </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditDialogOpen(true)}
-                className="text-white border-white/20 hover:bg-white/10"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditDialogOpen(true)}
+                  className="text-foreground border-border hover:bg-accent"
+                >
+                  <Edit className="h-3 w-3 mr-2" />
+                  Edit
+                </Button>
+              </div>
             </div>
           </div>
 
           {/* Archive Info */}
           {archive && (
-            <div className="mt-3 flex items-center gap-6 text-white/60 text-sm">
+            <div className="mt-3 flex items-center gap-6 text-muted-foreground text-sm">
               <div className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
                 Archived on {formatDate(archive.archivedAt)}
@@ -285,8 +297,8 @@ export default function ArchivedConversationPage() {
               {archive.tags.map((tag, index) => (
                 <Badge
                   key={index}
-                  variant="secondary"
-                  className="text-xs bg-white/20 text-white"
+                  variant="outline"
+                  className="text-foreground border-border"
                 >
                   <Tag className="h-2 w-2 mr-1" />
                   {tag}
@@ -304,62 +316,59 @@ export default function ArchivedConversationPage() {
         <div className="flex-1 flex min-w-0">
           {/* Chat Interface */}
           <div className="flex-1 flex flex-col">
-            <ChatInterface
+            {/* <ChatInterface
               sources={[]}
               conversationId={archive?.conversationId}
               showHeader={false}
               readOnly={true}
               initialMessages={messages}
-            />
+            /> */}
           </div>
 
           {/* References Panel */}
           {allReferences.length > 0 && (
-            <div className="w-80 border-l border-white/10 bg-black/20 backdrop-blur-sm flex flex-col">
-              <div className="p-4 border-b border-white/10">
-                <h3 className="text-white font-medium flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Content References
-                </h3>
-                <p className="text-white/60 text-xs mt-1">
-                  {allReferences.length} source
-                  {allReferences.length !== 1 ? "s" : ""} referenced in this
-                  conversation
-                </p>
-              </div>
-
+            <div className="w-80 bg-background/50 border-l border-border/50 p-4 overflow-y-auto backdrop-blur-md">
+              <h3 className="text-foreground text-sm font-medium mb-4 flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                References
+              </h3>
+              <p className="text-muted-foreground text-xs text-center py-8">
+                {allReferences.length} source
+                {allReferences.length !== 1 ? "s" : ""} referenced in this
+                conversation
+              </p>
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {allReferences.map((ref, index) => (
                   <div
                     key={index}
-                    className="bg-white/10 border border-white/20 rounded-lg p-3 hover:bg-white/15 transition-colors"
+                    className="bg-card/50 border border-border/50 rounded-lg p-3 hover:bg-card/70 transition-colors"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <FileText className="h-4 w-4 text-blue-400 flex-shrink-0" />
-                        <span className="text-white text-sm font-medium truncate">
+                        <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                        <div className="text-sm text-foreground font-medium truncate">
                           {ref.file}
-                        </span>
+                        </div>
                       </div>
                       <Badge
                         variant="secondary"
-                        className="text-xs bg-white/20 text-white ml-2"
+                        className="text-xs bg-secondary text-secondary-foreground ml-2"
                       >
                         {ref.usageCount}x
                       </Badge>
                     </div>
 
                     <div className="space-y-1">
-                      <div className="text-white/80 text-xs">
+                      <div className="text-muted-foreground text-xs">
                         <span className="font-medium">Section:</span>{" "}
                         {ref.section}
                       </div>
-                      <div className="text-white/80 text-xs">
+                      <div className="text-muted-foreground text-xs">
                         <span className="font-medium">Time:</span>{" "}
                         {ref.timeRange}
                       </div>
                       {ref.score && (
-                        <div className="text-white/80 text-xs">
+                        <div className="text-muted-foreground text-xs">
                           <span className="font-medium">Relevance:</span>{" "}
                           {(ref.score * 100).toFixed(1)}%
                         </div>
@@ -369,11 +378,8 @@ export default function ArchivedConversationPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="w-full mt-2 text-white/60 hover:text-white hover:bg-white/10 justify-start"
-                      onClick={() => {
-                        // TODO: Implement jump to reference functionality
-                        console.log("Jump to reference:", ref);
-                      }}
+                      className="w-full mt-2 text-muted-foreground hover:text-foreground hover:bg-accent justify-start"
+                      onClick={() => window.open(ref.url, "_blank")}
                     >
                       <ExternalLink className="h-3 w-3 mr-2" />
                       View in source
@@ -387,21 +393,21 @@ export default function ArchivedConversationPage() {
       </div>
 
       {/* Edit Archive Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-black/40 backdrop-blur-md border-white/20 text-white">
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="bg-background border-border text-foreground max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
+            <DialogTitle className="text-foreground">
               <Edit className="h-4 w-4" />
               Edit Archive
             </DialogTitle>
-            <DialogDescription className="text-white/60">
+            <DialogDescription className="text-muted-foreground">
               Update the archive title, description, and tags.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
-              <label className="text-white text-sm font-medium mb-2 block">
+              <label className="text-foreground text-sm font-medium mb-2 block">
                 Title
               </label>
               <Input
@@ -410,12 +416,12 @@ export default function ArchivedConversationPage() {
                   setEditForm((prev) => ({ ...prev, title: e.target.value }))
                 }
                 placeholder="Enter archive title"
-                className="bg-white/10 border-white/20 text-white placeholder-white/40 focus:border-white/40"
+                className="bg-background border-border text-foreground"
               />
             </div>
 
             <div>
-              <label className="text-white text-sm font-medium mb-2 block">
+              <label className="text-foreground text-sm font-medium mb-2 block">
                 Description
               </label>
               <Textarea
@@ -427,22 +433,22 @@ export default function ArchivedConversationPage() {
                   }))
                 }
                 placeholder="Enter archive description"
-                className="bg-white/10 border-white/20 text-white placeholder-white/40 focus:border-white/40 min-h-[80px]"
+                className="bg-background border-border text-foreground"
                 rows={3}
               />
             </div>
 
             <div>
-              <label className="text-white text-sm font-medium mb-2 block">
+              <label className="text-foreground text-sm font-medium mb-2 block">
                 Tags
               </label>
               <Input
                 value={editForm.tags.join(", ")}
                 onChange={(e) => handleTagsChange(e.target.value)}
                 placeholder="Enter tags separated by commas (e.g., nodejs, important, tutorial)"
-                className="bg-white/10 border-white/20 text-white placeholder-white/40 focus:border-white/40"
+                className="bg-background border-border text-foreground"
               />
-              <p className="text-white/40 text-xs mt-1">
+              <p className="text-muted-foreground text-xs mt-3">
                 Separate multiple tags with commas
               </p>
             </div>
@@ -451,16 +457,16 @@ export default function ArchivedConversationPage() {
           <DialogFooter className="gap-2">
             <Button
               variant="outline"
-              onClick={() => setEditDialogOpen(false)}
+              onClick={() => setIsEditDialogOpen(false)}
               disabled={editLoading}
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              className="bg-secondary hover:bg-secondary/80"
             >
               Cancel
             </Button>
             <Button
               onClick={handleEditSubmit}
               disabled={editLoading || !editForm.title.trim()}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-primary hover:bg-primary/90"
             >
               {editLoading ? "Saving..." : "Save Changes"}
             </Button>

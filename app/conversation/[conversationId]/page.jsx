@@ -7,6 +7,7 @@ import { ChatInterface } from "@/components/chat-interface";
 import ChatSidebar from "@/components/chat-sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Archive } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { getArchivedConversationByConversationId } from "@/lib/api";
 
 export default function ConversationPage() {
@@ -105,7 +106,7 @@ export default function ConversationPage() {
           }}
         />
       </div>
-      <div className="fixed inset-0 bg-background/50 backdrop-blur-md z-10" />
+      <div className="fixed inset-0 bg-background/70 backdrop-blur-md z-10" />
 
       {/* Main content */}
       <div className="relative z-10 flex h-screen">
@@ -121,16 +122,16 @@ export default function ConversationPage() {
         {/* Chat Interface - Scrollable */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
-          <div className="p-4 border-b border-white/10 flex-shrink-0">
+          <div className="p-4 border-b border-border/50 flex-shrink-0 backdrop-blur-md bg-background/50">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <h2 className="text-white text-lg font-medium">
+                <h2 className="text-foreground text-lg font-medium">
                   {isArchived && archiveInfo ? archiveInfo.title : "Chat"}
                 </h2>
                 {isArchived && (
                   <Badge
                     variant="outline"
-                    className="text-white border-white/20"
+                    className="text-foreground border-border"
                   >
                     <Archive className="h-3 w-3 mr-1" />
                     Archived
@@ -138,12 +139,10 @@ export default function ConversationPage() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {/* <div className="text-white/60 text-sm">
-                  Conversation ID: {conversationId}
-                </div> */}
+                <ThemeToggle />
               </div>
             </div>
-            <p className="text-white/40 text-xs mt-1">
+            <p className="text-muted-foreground text-xs mt-1">
               {isArchived
                 ? "This is an archived conversation • Messages are read-only"
                 : "RAG system ready • Ask questions about your sources"}
