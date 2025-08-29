@@ -301,7 +301,7 @@ export function ChatInterface({
         setLoadingMessages(false);
       }
     };
-  }, [conversationId, initialMessages]);
+  }, [conversationId, initialMessages.length]);
 
   const loadConversationMessages = async () => {
     // Prevent multiple simultaneous calls

@@ -11,35 +11,49 @@ import { getArchivedConversationByConversationId } from "@/lib/api";
 
 export default function ConversationPage() {
   const params = useParams();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const conversationId = params.conversationId;
   const [isArchived, setIsArchived] = useState(false);
   const [archiveInfo, setArchiveInfo] = useState(null);
+  const [archiveCheckLoading, setArchiveCheckLoading] = useState(false);
+  const [checkedConversationId, setCheckedConversationId] = useState(null);
 
   useEffect(() => {
     const checkIfArchived = async () => {
-      if (session && conversationId) {
-        try {
-          const response = await getArchivedConversationByConversationId(
-            conversationId
-          );
-          if (response.success && response.data) {
-            setIsArchived(true);
-            setArchiveInfo(response.data);
-          } else {
-            setIsArchived(false);
-            setArchiveInfo(null);
-          }
-        } catch (error) {
-          console.error("Error checking archive status:", error);
+      // Prevent multiple calls for the same conversation
+      if (
+        !conversationId ||
+        status !== "authenticated" ||
+        archiveCheckLoading ||
+        checkedConversationId === conversationId
+      ) {
+        return;
+      }
+
+      try {
+        setArchiveCheckLoading(true);
+        const response = await getArchivedConversationByConversationId(
+          conversationId
+        );
+        if (response.success && response.data) {
+          setIsArchived(true);
+          setArchiveInfo(response.data);
+        } else {
           setIsArchived(false);
           setArchiveInfo(null);
         }
+        setCheckedConversationId(conversationId);
+      } catch (error) {
+        console.error("Error checking archive status:", error);
+        setIsArchived(false);
+        setArchiveInfo(null);
+      } finally {
+        setArchiveCheckLoading(false);
       }
     };
 
     checkIfArchived();
-  }, [session, conversationId]);
+  }, [status, conversationId]);
 
   const handleNewChat = async () => {
     try {

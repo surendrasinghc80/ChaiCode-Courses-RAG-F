@@ -27,7 +27,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getAllArchives, deleteArchivedConversation, unarchiveConversation } from "@/lib/api";
+import {
+  getAllArchives,
+  deleteArchivedConversation,
+  unarchiveConversation,
+} from "@/lib/api";
 
 export default function ArchivesPage() {
   const router = useRouter();
@@ -42,7 +46,7 @@ export default function ArchivesPage() {
 
   useEffect(() => {
     if (status === "loading") return;
-    
+
     if (!session) {
       router.push("/login");
       return;
@@ -58,8 +62,12 @@ export default function ArchivesPage() {
       const filtered = archives.filter(
         (archive) =>
           archive.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          archive.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          archive.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+          archive.description
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          archive.tags?.some((tag) =>
+            tag.toLowerCase().includes(searchQuery.toLowerCase())
+          )
       );
       setFilteredArchives(filtered);
     }
@@ -70,7 +78,7 @@ export default function ArchivesPage() {
       setLoading(true);
       setError(null);
       const response = await getAllArchives({ page: 1, limit: 50 });
-      
+
       if (response.success) {
         setArchives(response.data.archives);
         setFilteredArchives(response.data.archives);
@@ -85,7 +93,7 @@ export default function ArchivesPage() {
 
   const handleArchiveAction = async (action, archive, e) => {
     e.stopPropagation();
-    
+
     switch (action) {
       case "view":
         router.push(`/conversation/${archive.conversationId}`);
@@ -108,7 +116,11 @@ export default function ArchivesPage() {
         }
         break;
       case "delete":
-        if (confirm(`Are you sure you want to delete the archived conversation "${archive.title}"?`)) {
+        if (
+          confirm(
+            `Are you sure you want to delete the archived conversation "${archive.title}"?`
+          )
+        ) {
           try {
             const response = await deleteArchivedConversation(archive.id);
             if (response.success) {
@@ -280,7 +292,7 @@ export default function ArchivesPage() {
                       <h3 className="text-lg font-medium text-white truncate pr-8">
                         {archive.title}
                       </h3>
-                      
+
                       {/* Three-dot menu */}
                       {hoveredArchive === archive.id && (
                         <div className="absolute top-4 right-4">
@@ -310,28 +322,36 @@ export default function ArchivesPage() {
                               onCloseAutoFocus={(e) => e.preventDefault()}
                             >
                               <DropdownMenuItem
-                                onClick={(e) => handleArchiveAction("view", archive, e)}
+                                onClick={(e) =>
+                                  handleArchiveAction("view", archive, e)
+                                }
                                 className="text-white hover:bg-gray-700 cursor-pointer"
                               >
                                 <Eye className="mr-2 h-4 w-4" />
                                 View
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={(e) => handleArchiveAction("edit", archive, e)}
+                                onClick={(e) =>
+                                  handleArchiveAction("edit", archive, e)
+                                }
                                 className="text-white hover:bg-gray-700 cursor-pointer"
                               >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={(e) => handleArchiveAction("unarchive", archive, e)}
+                                onClick={(e) =>
+                                  handleArchiveAction("unarchive", archive, e)
+                                }
                                 className="text-white hover:bg-gray-700 cursor-pointer"
                               >
                                 <Archive className="mr-2 h-4 w-4" />
                                 Unarchive
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={(e) => handleArchiveAction("delete", archive, e)}
+                                onClick={(e) =>
+                                  handleArchiveAction("delete", archive, e)
+                                }
                                 className="text-red-400 hover:bg-gray-700 cursor-pointer"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
