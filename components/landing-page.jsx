@@ -116,7 +116,7 @@ export default function LandingPage() {
           }}
         >
           <source
-            src="https://firebasestorage.googleapis.com/v0/b/project-x-e3c38.appspot.com/o/animation-video%2Flanding-page-video.mp4?alt=media&token=3528e1cb-c8a5-4c8b-a37f-97f1e7c87e49"
+            src="https://firebasestorage.googleapis.com/v0/b/project-x-e3c38.appspot.com/o/animation-video%2Fmain-app-animation.mp4?alt=media&token=b818b48b-ac00-41c4-93b6-05d3e6144b42"
             type="video/mp4"
           />
           {/* Fallback for browsers that don't support the video */}
