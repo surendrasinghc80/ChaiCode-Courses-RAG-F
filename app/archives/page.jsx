@@ -189,7 +189,7 @@ export default function ArchivesPage() {
           }}
         />
       </div>
-      <div className="fixed inset-0 bg-background/50 backdrop-blur-md z-10" />
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-10" />
 
       {/* Main content */}
       <div className="relative z-10 min-h-screen">

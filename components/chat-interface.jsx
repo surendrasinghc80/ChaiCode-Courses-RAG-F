@@ -458,20 +458,20 @@ export function ChatInterface({
       setTimeout(async () => {
         setTypingStage("generating");
 
-        const backend = await askQuestion(userMessage.content);
+        const backend = await askQuestion(userMessage.content, { conversationId });
         const newAiMessage = {
           id: Date.now(),
           role: "assistant",
-          content: backend.answer || "No answer returned.",
+          content: backend.data?.answer || "No answer returned.",
           timestamp: new Date(),
-          sources: (backend.references || []).map((r) => ({
+          sources: (backend.data?.references || []).map((r) => ({
             name: `${r.file} • ${r.section} • ${r.start} → ${r.end}`,
           })),
-          ragInfo: backend.references
+          ragInfo: backend.data?.references
             ? {
-                usedChunks: backend.references.length,
-                sources: backend.references,
-                confidence: backend.references[0]?.score,
+                usedChunks: backend.data.references.length,
+                sources: backend.data.references,
+                confidence: backend.data.references[0]?.score,
               }
             : undefined,
         };

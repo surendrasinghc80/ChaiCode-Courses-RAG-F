@@ -6,6 +6,16 @@ import { useEffect, useState } from "react";
 import { ChatInterface } from "@/components/chat-interface";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   ArrowLeft,
   Archive,
@@ -13,8 +23,10 @@ import {
   MessageSquare,
   Tag,
   Edit,
+  FileText,
+  ExternalLink,
 } from "lucide-react";
-import { getArchivedConversation } from "@/lib/api";
+import { getArchivedConversation, updateArchivedConversation } from "@/lib/api";
 
 export default function ArchivedConversationPage() {
   const params = useParams();
@@ -25,6 +37,14 @@ export default function ArchivedConversationPage() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [allReferences, setAllReferences] = useState([]);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    tags: [],
+  });
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -42,8 +62,40 @@ export default function ArchivedConversationPage() {
       setLoading(true);
       const response = await getArchivedConversation(archiveId);
       if (response.success) {
-        setArchive(response.data.archive);
-        setMessages(response.data.messages || []);
+        const archiveData = response.data.archive;
+        setArchive(archiveData);
+        const msgs = response.data.messages || [];
+        setMessages(msgs);
+
+        // Initialize edit form with current archive data
+        setEditForm({
+          title: archiveData.title || "",
+          description: archiveData.description || "",
+          tags: archiveData.tags || [],
+        });
+
+        // Extract all unique references from messages
+        const refs = new Map();
+        msgs.forEach((msg) => {
+          if (msg.metadata?.references) {
+            msg.metadata.references.forEach((ref) => {
+              const key = `${ref.file}-${ref.section}`;
+              if (!refs.has(key)) {
+                refs.set(key, {
+                  file: ref.file,
+                  section: ref.section,
+                  timeRange: `${ref.start} → ${ref.end}`,
+                  score: ref.score,
+                  usageCount: 1,
+                });
+              } else {
+                refs.get(key).usageCount++;
+              }
+            });
+          }
+        });
+
+        setAllReferences(Array.from(refs.values()));
       } else {
         setError(
           "Archived conversation not found or you don't have access to it."
@@ -57,6 +109,36 @@ export default function ArchivedConversationPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditSubmit = async () => {
+    try {
+      setEditLoading(true);
+      const response = await updateArchivedConversation(archiveId, editForm);
+      if (response.success) {
+        setArchive((prev) => ({
+          ...prev,
+          title: editForm.title,
+          description: editForm.description,
+          tags: editForm.tags,
+        }));
+        setEditDialogOpen(false);
+      } else {
+        console.error("Failed to update archive:", response.message);
+      }
+    } catch (err) {
+      console.error("Error updating archive:", err);
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleTagsChange = (tagsString) => {
+    const tags = tagsString
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+    setEditForm((prev) => ({ ...prev, tags }));
   };
 
   const formatDate = (dateString) => {
@@ -134,7 +216,7 @@ export default function ArchivedConversationPage() {
           }}
         />
       </div>
-      <div className="fixed inset-0 bg-background/50 backdrop-blur-md z-10" />
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-10" />
 
       {/* Main content */}
       <div className="relative z-10 flex flex-col h-screen">
@@ -169,10 +251,7 @@ export default function ArchivedConversationPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  // TODO: Implement edit functionality
-                  console.log("Edit archive");
-                }}
+                onClick={() => setEditDialogOpen(true)}
                 className="text-white border-white/20 hover:bg-white/10"
               >
                 <Edit className="h-4 w-4 mr-2" />
@@ -221,17 +300,173 @@ export default function ArchivedConversationPage() {
           </p>
         </div>
 
-        {/* Chat Interface */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <ChatInterface
-            sources={[]}
-            conversationId={archive?.conversationId}
-            showHeader={false}
-            readOnly={true}
-            initialMessages={messages}
-          />
+        {/* Main Content Area */}
+        <div className="flex-1 flex min-w-0">
+          {/* Chat Interface */}
+          <div className="flex-1 flex flex-col">
+            <ChatInterface
+              sources={[]}
+              conversationId={archive?.conversationId}
+              showHeader={false}
+              readOnly={true}
+              initialMessages={messages}
+            />
+          </div>
+
+          {/* References Panel */}
+          {allReferences.length > 0 && (
+            <div className="w-80 border-l border-white/10 bg-black/20 backdrop-blur-sm flex flex-col">
+              <div className="p-4 border-b border-white/10">
+                <h3 className="text-white font-medium flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Content References
+                </h3>
+                <p className="text-white/60 text-xs mt-1">
+                  {allReferences.length} source
+                  {allReferences.length !== 1 ? "s" : ""} referenced in this
+                  conversation
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {allReferences.map((ref, index) => (
+                  <div
+                    key={index}
+                    className="bg-white/10 border border-white/20 rounded-lg p-3 hover:bg-white/15 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <FileText className="h-4 w-4 text-blue-400 flex-shrink-0" />
+                        <span className="text-white text-sm font-medium truncate">
+                          {ref.file}
+                        </span>
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        className="text-xs bg-white/20 text-white ml-2"
+                      >
+                        {ref.usageCount}x
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="text-white/80 text-xs">
+                        <span className="font-medium">Section:</span>{" "}
+                        {ref.section}
+                      </div>
+                      <div className="text-white/80 text-xs">
+                        <span className="font-medium">Time:</span>{" "}
+                        {ref.timeRange}
+                      </div>
+                      {ref.score && (
+                        <div className="text-white/80 text-xs">
+                          <span className="font-medium">Relevance:</span>{" "}
+                          {(ref.score * 100).toFixed(1)}%
+                        </div>
+                      )}
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-2 text-white/60 hover:text-white hover:bg-white/10 justify-start"
+                      onClick={() => {
+                        // TODO: Implement jump to reference functionality
+                        console.log("Jump to reference:", ref);
+                      }}
+                    >
+                      <ExternalLink className="h-3 w-3 mr-2" />
+                      View in source
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Edit Archive Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-black/40 backdrop-blur-md border-white/20 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Edit className="h-4 w-4" />
+              Edit Archive
+            </DialogTitle>
+            <DialogDescription className="text-white/60">
+              Update the archive title, description, and tags.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-white text-sm font-medium mb-2 block">
+                Title
+              </label>
+              <Input
+                value={editForm.title}
+                onChange={(e) =>
+                  setEditForm((prev) => ({ ...prev, title: e.target.value }))
+                }
+                placeholder="Enter archive title"
+                className="bg-white/10 border-white/20 text-white placeholder-white/40 focus:border-white/40"
+              />
+            </div>
+
+            <div>
+              <label className="text-white text-sm font-medium mb-2 block">
+                Description
+              </label>
+              <Textarea
+                value={editForm.description}
+                onChange={(e) =>
+                  setEditForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                placeholder="Enter archive description"
+                className="bg-white/10 border-white/20 text-white placeholder-white/40 focus:border-white/40 min-h-[80px]"
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <label className="text-white text-sm font-medium mb-2 block">
+                Tags
+              </label>
+              <Input
+                value={editForm.tags.join(", ")}
+                onChange={(e) => handleTagsChange(e.target.value)}
+                placeholder="Enter tags separated by commas (e.g., nodejs, important, tutorial)"
+                className="bg-white/10 border-white/20 text-white placeholder-white/40 focus:border-white/40"
+              />
+              <p className="text-white/40 text-xs mt-1">
+                Separate multiple tags with commas
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(false)}
+              disabled={editLoading}
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditSubmit}
+              disabled={editLoading || !editForm.title.trim()}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {editLoading ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
