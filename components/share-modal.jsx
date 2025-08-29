@@ -36,13 +36,13 @@ export function ShareModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-gray-900 border-gray-700 text-white">
+      <DialogContent className="sm:max-w-md bg-background border-border text-foreground">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5" />
             Share Conversation
           </DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-muted-foreground">
             Share "{conversationTitle}" with others. They'll need to log in to
             view it.
           </DialogDescription>
@@ -51,7 +51,7 @@ export function ShareModal({
         <div className="space-y-4">
           {/* Share Type Selection */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">
+            <label className="text-sm font-medium text-foreground">
               Share Settings
             </label>
             <div className="flex gap-2">
@@ -79,14 +79,14 @@ export function ShareModal({
 
           {/* Share URL */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">
+            <label className="text-sm font-medium text-foreground">
               Share Link
             </label>
             <div className="flex gap-2">
               <Input
                 value={shareUrl}
                 readOnly
-                className="bg-gray-800 border-gray-600 text-gray-300"
+                className="bg-background border-border text-foreground"
               />
               <Button
                 size="sm"
@@ -95,7 +95,7 @@ export function ShareModal({
                 variant="outline"
               >
                 {copied ? (
-                  <Check className="h-4 w-4 text-green-400" />
+                  <Check className="h-4 w-4 text-green-500" />
                 ) : (
                   <Copy className="h-4 w-4" />
                 )}
@@ -104,14 +104,14 @@ export function ShareModal({
           </div>
 
           {/* Info */}
-          <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-3">
+          <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
             <div className="flex items-start gap-2">
-              <Users className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
+              <Users className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
               <div className="text-sm">
-                <p className="text-blue-300 font-medium">
+                <p className="text-primary font-medium">
                   Authentication Required
                 </p>
-                <p className="text-blue-200/80 mt-1">
+                <p className="text-muted-foreground mt-1">
                   Anyone with this link can view the conversation, but they must
                   be logged in to access it. The conversation will be read-only
                   for viewers.
@@ -124,7 +124,7 @@ export function ShareModal({
           <div className="flex gap-2 pt-2">
             <Button
               onClick={handleCopyLink}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              className="flex-1 bg-primary hover:bg-primary/90"
             >
               {copied ? (
                 <>
@@ -141,7 +141,7 @@ export function ShareModal({
             <Button
               variant="outline"
               onClick={onClose}
-              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+              className="border-border text-foreground hover:bg-accent"
             >
               Close
             </Button>

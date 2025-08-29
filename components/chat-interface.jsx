@@ -772,9 +772,9 @@ export function ChatInterface({
               size="sm"
               onClick={handleSend}
               disabled={!canSendMessage}
-              className="bg-primary hover:bg-primary/90 mb-2 disabled:bg-muted h-11 px-4"
+              className="bg-primary hover:bg-primary/90 mb-2.5 disabled:bg-muted h-11 px-4"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-4 w-4 text-primary" />
             </Button>
           </div>
           <p className="text-muted-foreground text-xs mt-2 text-center">

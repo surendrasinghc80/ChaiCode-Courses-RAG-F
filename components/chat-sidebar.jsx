@@ -20,6 +20,12 @@ import {
   Archive,
   Trash2,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -35,6 +41,8 @@ import {
   archiveConversation,
 } from "@/lib/api";
 import { ShareModal } from "@/components/share-modal";
+import { useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
 
 const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,6 +54,8 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
   const [error, setError] = useState(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
+
+  const { data: session } = useSession();
 
   // Load conversations from API
   const loadConversations = async () => {
@@ -413,17 +423,26 @@ const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
           </Avatar>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium text-foreground">
-              Surendra singh
+              {session?.user?.name}
             </div>
-            <div className="text-xs text-muted-foreground">Free</div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Sign Out</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 
