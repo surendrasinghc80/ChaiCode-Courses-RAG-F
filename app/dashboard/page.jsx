@@ -3,11 +3,15 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatsCard from "../../components/admin/stats-card";
 import UserTable from "../../components/admin/user-table";
 import UserDetailsModal from "../../components/admin/user-details-modal";
 import DashboardNav from "../../components/admin/dashboard-nav";
 import UserSearch from "../../components/admin/user-search";
+import CourseManagement from "../../components/course-management";
+import UserCourseManagement from "../../components/user-course-management";
+import EnhancedRagStats from "../../components/enhanced-rag-stats";
 import {
   getAllUsers,
   getPlatformStats,
@@ -30,6 +34,7 @@ export default function AdminDashboard() {
 
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Redirect non-admin users
   useEffect(() => {
@@ -139,7 +144,7 @@ export default function AdminDashboard() {
       if (response.success) {
         setStats(response.data);
       }
-    } catch {}
+    } catch { }
   }
 
   function handleSearch(search) {
@@ -170,104 +175,139 @@ export default function AdminDashboard() {
     <main className="min-h-screen bg-background text-foreground">
       <DashboardNav />
 
-      <section className="mx-auto max-w-6xl px-4 py-6">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-          {statsLoading && (
-            <>
-              <div className="h-24 rounded-lg bg-muted animate-pulse" />
-              <div className="h-24 rounded-lg bg-muted animate-pulse" />
-              <div className="h-24 rounded-lg bg-muted animate-pulse" />
-              <div className="h-24 rounded-lg bg-muted animate-pulse" />
-            </>
-          )}
-          {statsError && (
-            <div className="col-span-full text-red-600 dark:text-red-500">
-              Failed to load stats: {statsError}
-            </div>
-          )}
-          {stats && !statsError && (
-            <>
-              <StatsCard title="Total Users" value={stats.users.total} />
-              <StatsCard title="Active Users" value={stats.users.active} />
-              <StatsCard title="Blocked Users" value={stats.users.blocked} />
-              <StatsCard title="Admins" value={stats.users.admins} />
-              <StatsCard title="Regular Users" value={stats.users.regular} />
-              <StatsCard
-                title="Conversations"
-                value={stats.conversations.total}
-                subtext={`${stats.conversations.active} active`}
-              />
-              <StatsCard
-                title="Messages"
-                value={stats.messages.total}
-                subtext={`user ${stats.messages.user} • assistant ${stats.messages.assistant}`}
-              />
-              <StatsCard
-                title="Recent Registrations"
-                value={stats.users.recentRegistrations}
-                subtext="last 7 days"
-              />
-            </>
-          )}
-        </div>
+      <section className="mx-auto max-w-7xl px-4 py-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="courses">Courses</TabsTrigger>
+            <TabsTrigger value="user-access">User Access</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+          </TabsList>
 
-        {/* User Management Section */}
-        <div className="mt-8">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-4">User Management</h2>
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight">Dashboard Overview</h2>
+              <p className="text-muted-foreground">Platform statistics and key metrics</p>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              {statsLoading && (
+                <>
+                  <div className="h-24 rounded-lg bg-muted animate-pulse" />
+                  <div className="h-24 rounded-lg bg-muted animate-pulse" />
+                  <div className="h-24 rounded-lg bg-muted animate-pulse" />
+                  <div className="h-24 rounded-lg bg-muted animate-pulse" />
+                </>
+              )}
+              {statsError && (
+                <div className="col-span-full text-red-600 dark:text-red-500">
+                  Failed to load stats: {statsError}
+                </div>
+              )}
+              {stats && !statsError && (
+                <>
+                  <StatsCard title="Total Users" value={stats.users.total} />
+                  <StatsCard title="Active Users" value={stats.users.active} />
+                  <StatsCard title="Blocked Users" value={stats.users.blocked} />
+                  <StatsCard title="Admins" value={stats.users.admins} />
+                  <StatsCard title="Regular Users" value={stats.users.regular} />
+                  <StatsCard
+                    title="Conversations"
+                    value={stats.conversations.total}
+                    subtext={`${stats.conversations.active} active`}
+                  />
+                  <StatsCard
+                    title="Messages"
+                    value={stats.messages.total}
+                    subtext={`user ${stats.messages.user} • assistant ${stats.messages.assistant}`}
+                  />
+                  <StatsCard
+                    title="Recent Registrations"
+                    value={stats.users.recentRegistrations}
+                    subtext="last 7 days"
+                  />
+                </>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Course Management Tab */}
+          <TabsContent value="courses">
+            <CourseManagement />
+          </TabsContent>
+
+          {/* User Course Access Tab */}
+          <TabsContent value="user-access">
+            <UserCourseManagement />
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics">
+            <EnhancedRagStats />
+          </TabsContent>
+
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-6">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
+              <p className="text-muted-foreground">Manage platform users and their access</p>
+            </div>
+
             <UserSearch
               onSearch={handleSearch}
               onRoleFilter={handleRoleFilter}
             />
-          </div>
 
-          {usersLoading && (
-            <div className="rounded-lg border border-border">
-              <div className="h-12 bg-muted rounded-t-lg" />
-              <div className="h-40 bg-muted animate-pulse rounded-b-lg" />
-            </div>
-          )}
-          {usersError && (
-            <div className="text-red-600 dark:text-red-500">
-              Failed to load users: {usersError}
-            </div>
-          )}
-          {!usersLoading && !usersError && (
-            <UserTable
-              users={usersData.users}
-              onViewDetails={handleOpenDetails}
-              onToggleActive={handleToggleActive}
-              onResetMessages={handleResetMessages}
-            />
-          )}
-
-          {/* Pagination */}
-          {pagination && (
-            <div className="mt-4 flex items-center justify-between">
-              <button
-                disabled={!pagination.hasPrev}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Previous page"
-              >
-                ‹ Prev
-              </button>
-              <div className="text-sm text-muted-foreground">
-                Page {pagination.currentPage} of {pagination.totalPages} •{" "}
-                {pagination.totalUsers} users
+            {usersLoading && (
+              <div className="rounded-lg border border-border">
+                <div className="h-12 bg-muted rounded-t-lg" />
+                <div className="h-40 bg-muted animate-pulse rounded-b-lg" />
               </div>
-              <button
-                disabled={!pagination.hasNext}
-                onClick={() => setPage((p) => p + 1)}
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Next page"
-              >
-                Next ›
-              </button>
-            </div>
-          )}
-        </div>
+            )}
+            {usersError && (
+              <div className="text-red-600 dark:text-red-500">
+                Failed to load users: {usersError}
+              </div>
+            )}
+            {!usersLoading && !usersError && (
+              <UserTable
+                users={usersData.users}
+                onViewDetails={handleOpenDetails}
+                onToggleActive={handleToggleActive}
+                onResetMessages={handleResetMessages}
+              />
+            )}
+
+            {/* Pagination */}
+            {pagination && (
+              <div className="mt-4 flex items-center justify-between">
+                <button
+                  disabled={!pagination.hasPrev}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Previous page"
+                >
+                  ‹ Prev
+                </button>
+                <div className="text-sm text-muted-foreground">
+                  Page {pagination.currentPage} of {pagination.totalPages} •{" "}
+                  {pagination.totalUsers} users
+                </div>
+                <button
+                  disabled={!pagination.hasNext}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Next page"
+                >
+                  Next ›
+                </button>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </section>
 
       {/* Drawer/Modal for User Details */}

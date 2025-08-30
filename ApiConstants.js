@@ -6,6 +6,16 @@ export const AuthenticationApi = {
 export const CourseApi = {
   AddingSourse: "/course/upload-vtt", // POST
   AnswerQuestion: "/course/ask", // POST
+  CreateCourse: "/course/courses", // POST
+  GetCourses: "/course/courses", // GET
+  UpdateCourse: "/course/courses/:courseId", // PUT
+  DeleteCourse: "/course/courses/:courseId", // DELETE
+  GrantCourseAccess: "/course/grant-access", // POST
+  RevokeCourseAccess: "/course/revoke-access", // POST
+  GetUserCourses: "/course/user-courses", // GET
+  GetUserCoursesById: "/course/user-courses/:userId", // GET
+  GetRagStats: "/course/rag-stats", // GET
+  GetRagStatsById: "/course/rag-stats/:userId", // GET
 };
 
 export const ConversationApi = {
