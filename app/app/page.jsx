@@ -7,8 +7,6 @@ import {
   // Share,
   LogOut,
   Brain,
-  Moon,
-  Sun,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -19,21 +17,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useTheme } from "next-themes";
 import { signOut, useSession } from "next-auth/react";
-import { VttFilesProvider, useVttFiles } from "@/contexts/VttFilesContext";
-import { SourcesPanel } from "@/components/sources-panel";
 import { AddSourcesModal } from "@/components/add-sources-modal";
 import { ChatInterface } from "@/components/chat-interface";
+import ChatSidebar from "@/components/chat-sidebar";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useRouter } from "next/navigation";
 // import { StudioPanel } from "@/components/studio-panel";
 
 function NotebookLMContent() {
   const [showAddSources, setShowAddSources] = useState(false);
   const [sources, setSources] = useState([]);
-  const { theme, setTheme } = useTheme();
   const { data: session, status } = useSession();
-  const { files: vttFiles } = useVttFiles();
   const router = useRouter();
 
   // Redirect unauthenticated users to home page
@@ -42,105 +37,6 @@ function NotebookLMContent() {
       router.push("/");
     }
   }, [status, router]);
-
-  // Sync VTT files with sources state on mount and when vttFiles change
-  useEffect(() => {
-    if (vttFiles.length > 0) {
-      const vttSources = vttFiles.map((file) => ({
-        id: file.id,
-        name: file.fileName,
-        type: "text/vtt",
-        size: file.fileSize,
-        uploadedAt: new Date(file.uploadedDate),
-        status: "processed",
-        metadata: {
-          processingTime: "1.2s",
-          chunks: 1,
-        },
-      }));
-      setSources(vttSources);
-    }
-  }, [vttFiles]);
-
-  // Background image rotation
-  const images = useMemo(
-    () => [
-      "/gradiant-bg-1.jpg",
-      "/gradiant-bg-2.jpg",
-      "/gradiant-bg-3.jpg",
-      "/gradiant-bg-4.jpg",
-      "/gradiant-bg-5.jpg",
-      "/gradiant-bg-6.jpg",
-      "/gradiant-bg-7.jpg",
-      "/gradiant-bg-8.jpg",
-      "/gradiant-bg-9.jpg",
-      "/gradiant-bg-10.jpg",
-      "/gradiant-bg-11.jpg",
-      "/gradiant-bg-12.jpg",
-    ],
-    []
-  );
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [nextIndex, setNextIndex] = useState(1);
-  const [fading, setFading] = useState(false);
-  const ROTATE_MS = 6000; // change every 6 seconds
-  const FADE_MS = 1000; // 1s crossfade
-  const fadeTimeoutRef = useRef(null);
-  const cycleTimeoutRef = useRef(null);
-  const currentIndexRef = useRef(0);
-
-  // Keep ref in sync
-  useEffect(() => {
-    currentIndexRef.current = currentIndex;
-  }, [currentIndex]);
-
-  // Rotation loop with preload-before-fade, sequential to avoid overlaps
-  useEffect(() => {
-    let cancelled = false;
-
-    const runCycle = () => {
-      if (cancelled) return;
-      const ni = (currentIndexRef.current + 1) % images.length;
-      const preload = new Image();
-
-      const triggerFade = () => {
-        if (cancelled) return;
-        setNextIndex(ni);
-        setFading(true);
-        if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
-        fadeTimeoutRef.current = setTimeout(() => {
-          if (cancelled) return;
-          setCurrentIndex(ni);
-          setFading(false);
-          // Schedule next cycle after display period
-          cycleTimeoutRef.current = setTimeout(runCycle, ROTATE_MS);
-        }, FADE_MS);
-      };
-
-      // Try decode first for smoother results
-      preload.src = images[ni];
-      if (preload.decode) {
-        preload
-          .decode()
-          .then(triggerFade)
-          .catch(() => {
-            // Fallback to onload if decode fails
-            preload.onload = triggerFade;
-          });
-      } else {
-        preload.onload = triggerFade;
-      }
-    };
-
-    // Initial delay so first image is visible for ROTATE_MS before first change
-    cycleTimeoutRef.current = setTimeout(runCycle, ROTATE_MS);
-
-    return () => {
-      cancelled = true;
-      if (cycleTimeoutRef.current) clearTimeout(cycleTimeoutRef.current);
-      if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
-    };
-  }, [images]);
 
   // Show loading while checking authentication
   if (status === "loading") {
@@ -151,7 +47,6 @@ function NotebookLMContent() {
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
-      
     );
   }
 
@@ -177,52 +72,65 @@ function NotebookLMContent() {
     console.log("Sending message:", message);
   };
 
+  const handleNewChat = () => {
+    // Handle new chat creation
+    console.log("Creating new chat");
+  };
+
+  const handleSelectChat = (conversation) => {
+    // Handle chat selection
+    console.log("Selected chat:", conversation);
+  };
+
   return (
-    <div className="min-h-screen relative">
-      {/* Backgrounds with crossfade */}
+    <div className="min-h-screen relative w-full">
+      {/* Background Video */}
       <div className="fixed inset-0 z-0">
-        {/* Current */}
-        <img
-          src={images[currentIndex]}
-          alt="Background current"
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${fading ? "opacity-0" : "opacity-100"
-            }`}
+        <video
+          className="w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          onLoadedData={(e) => {
+            e.currentTarget.play().catch(console.error);
+          }}
+        >
+          <source
+            src="https://firebasestorage.googleapis.com/v0/b/project-x-e3c38.appspot.com/o/animation-video%2Flanding-page-video.mp4?alt=media&token=3528e1cb-c8a5-4c8b-a37f-97f1e7c87e49"
+            type="video/mp4"
+          />
+        </video>
+        {/* Enhanced fallback background with animated gradient */}
+        <div
+          className="absolute inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 animate-pulse"
+          style={{
+            backgroundImage: `
+              radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+              radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%)
+            `,
+          }}
         />
-        {/* Next (for crossfade) */}
-        <img
-          src={images[nextIndex]}
-          alt="Background next"
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${fading ? "opacity-100" : "opacity-0"
-            }`}
-        />
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-black/50" />
       </div>
+      <div className="fixed inset-0 bg-background/70 backdrop-blur-md z-10" />
 
       {/* Main content */}
       <div className="relative z-10 flex flex-col h-screen">
         {/* Header */}
-        <header className="flex items-center justify-between p-4 border-b border-white/10">
+        <header className="flex items-center justify-between p-4 border-b border-border/50 backdrop-blur-md bg-background/50">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <img src="/icon.svg" alt="ChaiCode RAG" className="h-8 w-8" />
-              <h1 className="text-white text-lg font-medium">ChaiCode RAG</h1>
+              <h1 className="text-foreground text-lg font-medium">
+                ChaiCode RAG
+              </h1>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="text-white hover:bg-white/10"
-            >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
-            </Button>
+            <ThemeToggle />
             {/* <Button
                 variant="ghost"
                 size="sm"
@@ -248,31 +156,27 @@ function NotebookLMContent() {
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="https://github.com/shadcn.png" />
-                    <AvatarFallback className="bg-white/20 text-white">
+                    <AvatarFallback className="bg-muted text-muted-foreground">
                       {session?.user?.name?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-56 bg-gray-900 border-gray-700"
-                align="end"
-                forceMount
-              >
+              <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none text-white">
+                    <p className="text-sm font-medium leading-none">
                       {session?.user?.name || "User"}
                     </p>
-                    <p className="text-xs leading-none text-gray-400">
+                    <p className="text-xs leading-none text-muted-foreground">
                       {session?.user?.email || "No email"}
                     </p>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-gray-700" />
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleLogout}
-                  className="text-white hover:bg-gray-800 cursor-pointer"
+                  className="cursor-pointer"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
@@ -284,16 +188,15 @@ function NotebookLMContent() {
 
         {/* Three-panel layout */}
         <div className="flex h-[calc(100vh-73px)]">
-          {/* Sources Panel */}
-          <SourcesPanel
-            sources={sources}
-            onAddSources={handleAddSources}
-            onDeleteSource={handleDeleteSource}
-            onShowAddModal={() => setShowAddSources(true)}
+          {/* Chat Sidebar */}
+          <ChatSidebar
+            onNewChat={handleNewChat}
+            onSelectChat={handleSelectChat}
+            currentChatId={null}
           />
 
           {/* Chat Panel */}
-          <ChatInterface sources={sources} onSendMessage={handleSendMessage} />
+          <ChatInterface sources={[]} onSendMessage={handleSendMessage} />
 
           {/* Studio Panel */}
           {/* <StudioPanel sources={sources} /> */}
@@ -311,9 +214,5 @@ function NotebookLMContent() {
 }
 
 export default function NotebookLM() {
-  return (
-    <VttFilesProvider>
-      <NotebookLMContent />
-    </VttFilesProvider>
-  );
+  return <NotebookLMContent />;
 }

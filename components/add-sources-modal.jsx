@@ -18,7 +18,6 @@ import {
   Presentation,
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
-import { uploadVttFiles } from "@/lib/api";
 
 export function AddSourcesModal({ isOpen, onClose, onAddSources }) {
   const [activeTab, setActiveTab] = useState("upload");
@@ -37,27 +36,8 @@ export function AddSourcesModal({ isOpen, onClose, onAddSources }) {
         return;
       }
 
-      try {
-        setUploading(true);
-        const res = await uploadVttFiles(vttFiles);
-        // Create processed sources from backend response
-        const newSources = (res?.files || vttFiles).map((f, idx) => ({
-          id: Date.now() + idx,
-          name: f.file || vttFiles[idx]?.name || `VTT ${idx + 1}`,
-          type: "text/vtt",
-          size: 0,
-          uploadedAt: new Date(),
-          status: "processed",
-          content: undefined,
-        }));
-        onAddSources(newSources);
-        onClose();
-      } catch (err) {
-        console.error("VTT upload failed", err);
-        alert(`Upload failed: ${err?.message || err}`);
-      } finally {
-        setUploading(false);
-      }
+      console.log("VTT upload functionality has been removed");
+      setUploading(false);
     },
     [onAddSources, onClose]
   );

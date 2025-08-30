@@ -25,8 +25,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RAGService } from "@/lib/rag-service";
-import { askQuestion } from "@/lib/api";
-import { useVttFiles } from "@/contexts/VttFilesContext";
+import { askQuestion, getConversation } from "@/lib/api";
 import CodeBlock from "@/components/code-block";
 
 const TypingIndicator = ({ stage = "thinking" }) => {
@@ -39,26 +38,26 @@ const TypingIndicator = ({ stage = "thinking" }) => {
   return (
     <div className="flex items-center gap-2 p-4">
       <Avatar className="h-8 w-8">
-        <AvatarFallback className="bg-blue-600 text-white">
+        <AvatarFallback className="bg-primary text-primary-foreground">
           <Bot className="h-4 w-4" />
         </AvatarFallback>
       </Avatar>
       <div className="flex items-center gap-3">
         <div className="flex gap-1">
           <div
-            className="w-2 h-2 bg-white/40 rounded-full animate-bounce"
+            className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce"
             style={{ animationDelay: "0ms" }}
           />
           <div
-            className="w-2 h-2 bg-white/40 rounded-full animate-bounce"
+            className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce"
             style={{ animationDelay: "150ms" }}
           />
           <div
-            className="w-2 h-2 bg-white/40 rounded-full animate-bounce"
+            className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce"
             style={{ animationDelay: "300ms" }}
           />
         </div>
-        <span className="text-white/60 text-sm">{stages[stage]}</span>
+        <span className="text-muted-foreground text-sm">{stages[stage]}</span>
         {stage === "searching" && (
           <Search className="h-4 w-4 text-blue-400 animate-pulse" />
         )}
@@ -124,7 +123,7 @@ const MessageBubble = ({
     >
       {!isUser && (
         <Avatar className="h-8 w-8 flex-shrink-0">
-          <AvatarFallback className="bg-blue-600 text-white">
+          <AvatarFallback className="bg-primary text-primary-foreground">
             <Bot className="h-4 w-4" />
           </AvatarFallback>
         </Avatar>
@@ -135,41 +134,22 @@ const MessageBubble = ({
           className={cn(
             "p-4",
             isUser
-              ? "bg-blue-600 text-white ml-auto"
-              : "bg-white/10 border-white/20 text-white"
+              ? "bg-primary text-primary-foreground ml-auto"
+              : "bg-card/50 border-border/50 text-foreground"
           )}
         >
           {renderMessageContent(message.content)}
 
-          {/* RAG Context Info */}
-          {message.ragInfo && !isUser && (
-            <div className="mt-3 pt-3 border-t border-white/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Search className="h-3 w-3 text-white/60" />
-                <span className="text-xs text-white/60">
-                  Found {message.ragInfo.usedChunks} relevant passages from{" "}
-                  {message.ragInfo.sources.length} source
-                  {message.ragInfo.sources.length !== 1 ? "s" : ""}
-                </span>
-                {message.ragInfo.confidence && (
-                  <Badge variant="secondary" className="text-xs">
-                    {Math.round(message.ragInfo.confidence * 100)}% confidence
-                  </Badge>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Source Citations */}
           {message.sources && message.sources.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-white/20">
-              <p className="text-xs text-white/60 mb-2">Sources:</p>
+            <div className="mt-3 pt-3 border-t border-border/50">
+              <p className="text-xs text-muted-foreground mb-2">Sources:</p>
               <div className="flex flex-wrap gap-2">
                 {message.sources.map((source, index) => (
                   <Badge
                     key={index}
                     variant="secondary"
-                    className="text-xs bg-white/20 text-white hover:bg-white/30 cursor-pointer"
+                    className="text-xs bg-secondary text-secondary-foreground hover:bg-secondary/80 cursor-pointer"
                   >
                     <FileText className="h-3 w-3 mr-1" />
                     {source.name}
@@ -188,7 +168,7 @@ const MessageBubble = ({
               variant="ghost"
               size="sm"
               onClick={() => onCopy(message.content)}
-              className="h-6 px-2 text-white/60 hover:text-white hover:bg-white/10"
+              className="h-6 px-2 text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <Copy className="h-3 w-3" />
             </Button>
@@ -196,7 +176,7 @@ const MessageBubble = ({
               variant="ghost"
               size="sm"
               onClick={() => onSpeak(message)}
-              className="h-6 px-2 text-white/60 hover:text-white hover:bg-white/10"
+              className="h-6 px-2 text-muted-foreground hover:text-foreground hover:bg-accent"
               aria-label={isSpeaking ? "Stop audio" : "Play audio"}
               title={isSpeaking ? "Stop" : "Listen"}
             >
@@ -210,7 +190,7 @@ const MessageBubble = ({
               variant="ghost"
               size="sm"
               onClick={() => onRegenerate(message.id)}
-              className="h-6 px-2 text-white/60 hover:text-white hover:bg-white/10"
+              className="h-6 px-2 text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <RefreshCw className="h-3 w-3" />
             </Button>
@@ -218,7 +198,7 @@ const MessageBubble = ({
               variant="ghost"
               size="sm"
               onClick={() => onFeedback(message.id, "up")}
-              className="h-6 px-2 text-white/60 hover:text-white hover:bg-white/10"
+              className="h-6 px-2 text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <ThumbsUp className="h-3 w-3" />
             </Button>
@@ -226,7 +206,7 @@ const MessageBubble = ({
               variant="ghost"
               size="sm"
               onClick={() => onFeedback(message.id, "down")}
-              className="h-6 px-2 text-white/60 hover:text-white hover:bg-white/10"
+              className="h-6 px-2 text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <ThumbsDown className="h-3 w-3" />
             </Button>
@@ -236,7 +216,7 @@ const MessageBubble = ({
 
       {isUser && (
         <Avatar className="h-8 w-8 flex-shrink-0">
-          <AvatarFallback className="bg-gray-600 text-white">
+          <AvatarFallback className="bg-secondary text-secondary-foreground">
             <User className="h-4 w-4" />
           </AvatarFallback>
         </Avatar>
@@ -245,10 +225,16 @@ const MessageBubble = ({
   );
 };
 
-export function ChatInterface({ sources, onSendMessage }) {
+export function ChatInterface({
+  sources,
+  onSendMessage,
+  conversationId = null,
+  showHeader = true,
+  readOnly = false,
+  initialMessages = [],
+}) {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
-  const { chats, addChat } = useVttFiles();
   const [isTyping, setIsTyping] = useState(false);
   const [typingStage, setTypingStage] = useState("thinking");
   const [ragService, setRagService] = useState(null);
@@ -260,6 +246,10 @@ export function ChatInterface({ sources, onSendMessage }) {
   // ElevenLabs audio playback
   const audioRef = useRef(null);
   const audioUrlRef = useRef(null);
+  // Loading state for conversation messages
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [loadedConversationId, setLoadedConversationId] = useState(null);
+  const loadTimeoutRef = useRef(null);
 
   // Initialize RAG service when sources change
   useEffect(() => {
@@ -278,21 +268,91 @@ export function ChatInterface({ sources, onSendMessage }) {
     scrollToBottom();
   }, [messages, isTyping]);
 
+  // Load conversation messages if conversationId is provided or set initial messages
   useEffect(() => {
-    if (chats.length > 0) {
-      // Convert VTT context chats to message format
-      const convertedMessages = chats.map((chat) => ({
-        id: chat.id,
-        role: chat.role,
-        content: chat.message, // Convert 'message' field to 'content'
-        timestamp: chat.timestamp,
-        sources: chat.sources || [],
-        ragInfo: chat.ragInfo,
-        error: chat.error,
+    if (initialMessages.length > 0) {
+      // For archived conversations, use provided messages
+      const convertedMessages = initialMessages.map((msg) => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.message,
+        timestamp: msg.timestamp,
+        sources: [],
+        ragInfo: null,
+        error: null,
       }));
       setMessages(convertedMessages);
+      setLoadedConversationId(conversationId);
+    } else if (
+      conversationId &&
+      conversationId !== loadedConversationId &&
+      !loadingMessages
+    ) {
+      loadConversationMessages();
     }
-  }, [chats]);
+
+    // Cleanup function to reset state when conversation changes
+    return () => {
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current);
+        loadTimeoutRef.current = null;
+      }
+      if (conversationId !== loadedConversationId) {
+        setLoadingMessages(false);
+      }
+    };
+  }, [conversationId, initialMessages.length]);
+
+  const loadConversationMessages = async () => {
+    // Prevent multiple simultaneous calls
+    if (loadingMessages || loadedConversationId === conversationId) {
+      return;
+    }
+
+    try {
+      setLoadingMessages(true);
+      const response = await getConversation(conversationId);
+      if (response.success && response.data.conversation.messages) {
+        // Sort messages by timestamp to ensure correct chronological order
+        const sortedMessages = response.data.conversation.messages.sort(
+          (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+        );
+
+        const convertedMessages = sortedMessages.map((msg) => {
+          // Extract references from metadata if available
+          const references = msg.metadata?.references || [];
+          const sources = references.map((ref) => ({
+            name: `${ref.file} • ${ref.section} • ${ref.start} → ${ref.end}`,
+          }));
+
+          const ragInfo =
+            references.length > 0
+              ? {
+                  usedChunks: references.length,
+                  sources: references,
+                  confidence: references[0]?.score,
+                }
+              : null;
+
+          return {
+            id: msg.id,
+            role: msg.role,
+            content: msg.message,
+            timestamp: msg.timestamp,
+            sources: sources,
+            ragInfo: ragInfo,
+            error: null,
+          };
+        });
+        setMessages(convertedMessages);
+        setLoadedConversationId(conversationId);
+      }
+    } catch (error) {
+      console.error("Failed to load conversation messages:", error);
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
 
   // Stop speech on unmount
   useEffect(() => {
@@ -316,8 +376,6 @@ export function ChatInterface({ sources, onSendMessage }) {
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    // Store user message in VTT context
-    addChat(userMessage.content, "user", { timestamp: userMessage.timestamp });
 
     const currentQuery = inputValue;
     setInputValue("");
@@ -328,31 +386,26 @@ export function ChatInterface({ sources, onSendMessage }) {
       setTimeout(() => setTypingStage("searching"), 400);
       setTypingStage("generating");
 
-      const backend = await askQuestion(currentQuery);
+      const backend = await askQuestion(currentQuery, { conversationId });
 
       const aiMessage = {
         id: Date.now() + 1,
         role: "assistant",
-        content: backend.answer || "No answer returned.",
+        content: backend.data?.answer || "No answer returned.",
         timestamp: new Date(),
-        sources: (backend.references || []).map((r) => ({
+        sources: (backend.data?.references || []).map((r) => ({
           name: `${r.file} • ${r.section} • ${r.start} → ${r.end}`,
         })),
-        ragInfo: backend.references
+        ragInfo: backend.data?.references
           ? {
-              usedChunks: backend.references.length,
-              sources: backend.references,
-              confidence: backend.references[0]?.score,
+              usedChunks: backend.data.references.length,
+              sources: backend.data.references,
+              confidence: backend.data.references[0]?.score,
             }
           : undefined,
       };
 
       setMessages((prev) => [...prev, aiMessage]);
-      // Store AI message in VTT context
-      addChat(aiMessage.content, "assistant", {
-        timestamp: aiMessage.timestamp,
-        sources: aiMessage.sources,
-      });
       setIsTyping(false);
     } catch (error) {
       console.error("Error generating response:", error);
@@ -368,11 +421,6 @@ export function ChatInterface({ sources, onSendMessage }) {
       };
 
       setMessages((prev) => [...prev, errorMessage]);
-      // Store error message in VTT context
-      addChat(errorMessage.content, "assistant", {
-        timestamp: errorMessage.timestamp,
-        error: true,
-      });
       setIsTyping(false);
     }
 
@@ -410,20 +458,22 @@ export function ChatInterface({ sources, onSendMessage }) {
       setTimeout(async () => {
         setTypingStage("generating");
 
-        const backend = await askQuestion(userMessage.content);
+        const backend = await askQuestion(userMessage.content, {
+          conversationId,
+        });
         const newAiMessage = {
           id: Date.now(),
           role: "assistant",
-          content: backend.answer || "No answer returned.",
+          content: backend.data?.answer || "No answer returned.",
           timestamp: new Date(),
-          sources: (backend.references || []).map((r) => ({
+          sources: (backend.data?.references || []).map((r) => ({
             name: `${r.file} • ${r.section} • ${r.start} → ${r.end}`,
           })),
-          ragInfo: backend.references
+          ragInfo: backend.data?.references
             ? {
-                usedChunks: backend.references.length,
-                sources: backend.references,
-                confidence: backend.references[0]?.score,
+                usedChunks: backend.data.references.length,
+                sources: backend.data.references,
+                confidence: backend.data.references[0]?.score,
               }
             : undefined,
         };
@@ -432,13 +482,6 @@ export function ChatInterface({ sources, onSendMessage }) {
           const newMessages = [...prev];
           newMessages[messageIndex] = newAiMessage;
           return newMessages;
-        });
-
-        // Store regenerated message in VTT context
-        addChat(newAiMessage.content, "assistant", {
-          timestamp: newAiMessage.timestamp,
-          sources: newAiMessage.sources,
-          regenerated: true,
         });
 
         setIsTyping(false);
@@ -553,46 +596,55 @@ export function ChatInterface({ sources, onSendMessage }) {
   };
 
   const hasMessages = messages.length > 0;
-  const canSendMessage = inputValue.trim() && !isTyping;
   const processedSources = sources.filter((s) => s.status === "processed");
-  const ragStats = ragService?.getStats?.();
+  const ragStats = ragService
+    ? {
+        totalChunks: processedSources.length * 10, // Estimated
+        avgChunkSize: 150, // Estimated words per chunk
+      }
+    : null;
+
+  const canSendMessage = inputValue.trim().length > 0 && !isTyping;
 
   return (
-    <div className="flex-1 bg-black/10 backdrop-blur-sm flex flex-col">
-      {/* Chat Header */}
-      <div className="p-4 border-b border-white/10">
-        <div className="flex items-center justify-between">
-          <h2 className="text-white font-medium">Chat</h2>
-          <div className="flex items-center gap-2">
-            {processedSources.length > 0 && ragStats && (
-              <Badge variant="secondary" className="text-xs">
-                {ragStats.totalChunks} chunks ready
-              </Badge>
-            )}
-            {sources.length > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {processedSources.length}/{sources.length} sources processed
-              </Badge>
-            )}
+    <div className="flex flex-col w-full h-full bg-card/50 backdrop-blur-sm">
+      {/* Header - conditionally rendered */}
+      {showHeader && (
+        <div className="p-4 border-b border-border/50 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <h2 className="text-foreground text-lg font-medium">Chat</h2>
+            <div className="flex items-center gap-2">
+              {processedSources.length > 0 && (
+                <Badge
+                  variant="outline"
+                  className="text-foreground border-border"
+                >
+                  {processedSources.length} source
+                  {processedSources.length !== 1 ? "s" : ""} ready
+                </Badge>
+              )}
+            </div>
           </div>
+          {ragStats && (
+            <div>
+              <p className="text-muted-foreground text-xs mt-1">
+                RAG system ready • {ragStats.avgChunkSize} avg words per chunk
+              </p>
+            </div>
+          )}
         </div>
-        {processedSources.length > 0 && ragStats && (
-          <p className="text-white/40 text-xs mt-1">
-            RAG system ready • {ragStats.avgChunkSize} avg words per chunk
-          </p>
-        )}
-      </div>
+      )}
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {!hasMessages && sources.length === 0 ? (
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center">
-              <MessageSquare className="h-12 w-12 text-white/40 mx-auto mb-4" />
-              <h3 className="text-white text-lg mb-2">
+              <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-foreground text-lg mb-2">
                 Add sources to get started
               </h3>
-              <p className="text-white/60 text-sm mb-4">
+              <p className="text-muted-foreground text-sm mb-4">
                 Upload documents, add websites, or paste text to begin chatting
                 with your content using RAG.
               </p>
@@ -601,11 +653,11 @@ export function ChatInterface({ sources, onSendMessage }) {
         ) : !hasMessages && processedSources.length === 0 ? (
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center">
-              <AlertCircle className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
-              <h3 className="text-white text-lg mb-2">
+              <AlertCircle className="h-12 w-12 text-warning mx-auto mb-4" />
+              <h3 className="text-foreground text-lg mb-2">
                 Sources are processing
               </h3>
-              <p className="text-white/60 text-sm mb-4">
+              <p className="text-muted-foreground text-sm mb-4">
                 Please wait while your sources are being processed for chat.
                 This usually takes a few moments.
               </p>
@@ -620,11 +672,11 @@ export function ChatInterface({ sources, onSendMessage }) {
         ) : !hasMessages ? (
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center">
-              <Bot className="h-12 w-12 text-blue-400 mx-auto mb-4" />
-              <h3 className="text-white text-lg mb-2">
+              <Bot className="h-12 w-12 text-primary mx-auto mb-4" />
+              <h3 className="text-foreground text-lg mb-2">
                 Ready to chat with your sources!
               </h3>
-              <p className="text-white/60 text-sm mb-4">
+              <p className="text-muted-foreground text-sm mb-4">
                 Ask questions about your {processedSources.length} processed
                 source
                 {processedSources.length !== 1 ? "s" : ""}. I'll search through
@@ -639,7 +691,7 @@ export function ChatInterface({ sources, onSendMessage }) {
                       "What are the main topics covered in my sources?"
                     )
                   }
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  className="bg-secondary/50 border-border text-foreground hover:bg-secondary"
                 >
                   Summarize main topics
                 </Button>
@@ -651,7 +703,7 @@ export function ChatInterface({ sources, onSendMessage }) {
                       "What are the key insights from my documents?"
                     )
                   }
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  className="bg-secondary/50 border-border text-foreground hover:bg-secondary"
                 >
                   Find key insights
                 </Button>
@@ -661,7 +713,7 @@ export function ChatInterface({ sources, onSendMessage }) {
                   onClick={() =>
                     setInputValue("How do my sources relate to each other?")
                   }
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  className="bg-secondary/50 border-border text-foreground hover:bg-secondary"
                 >
                   Find connections
                 </Button>
@@ -687,48 +739,50 @@ export function ChatInterface({ sources, onSendMessage }) {
         )}
       </div>
 
-      {/* Input Area */}
-      <div className="p-4 border-t border-white/10 ">
-        <div className="flex items-end gap-2">
-          <div className="flex-1">
-            <textarea
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={
-                processedSources.length === 0
-                  ? "Ask any question or upload sources for RAG-powered responses..."
-                  : "Ask questions about your sources..."
-              }
-              className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 resize-none min-h-[44px] max-h-32"
-              disabled={false}
-              rows={1}
-              style={{
-                height: "auto",
-                minHeight: "44px",
-              }}
-              onInput={(e) => {
-                e.target.style.height = "auto";
-                e.target.style.height =
-                  Math.min(e.target.scrollHeight, 128) + "px";
-              }}
-            />
+      {/* Input Area - Hidden in read-only mode */}
+      {!readOnly && (
+        <div className="p-4 border-t border-border/50 flex-shrink-0">
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <textarea
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder={
+                  processedSources.length === 0
+                    ? "Ask any question or upload sources for RAG-powered responses..."
+                    : "Ask questions about your sources..."
+                }
+                className="w-full bg-background/50 border border-border rounded-lg px-4 py-3 text-foreground placeholder-muted-foreground resize-none min-h-[44px] max-h-32"
+                disabled={false}
+                rows={1}
+                style={{
+                  height: "auto",
+                  minHeight: "44px",
+                }}
+                onInput={(e) => {
+                  e.target.style.height = "auto";
+                  e.target.style.height =
+                    Math.min(e.target.scrollHeight, 128) + "px";
+                }}
+              />
+            </div>
+            <Button
+              size="sm"
+              onClick={handleSend}
+              disabled={!canSendMessage}
+              className="bg-primary hover:bg-primary/90 mb-2.5 disabled:bg-muted h-11 px-4"
+            >
+              <Send className="h-4 w-4 text-primary" />
+            </Button>
           </div>
-          <Button
-            size="sm"
-            onClick={handleSend}
-            disabled={!canSendMessage}
-            className="bg-blue-600 hover:bg-blue-700 mb-2 disabled:bg-gray-600 h-11 px-4"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          <p className="text-muted-foreground text-xs mt-2 text-center">
+            RAG-powered responses based on couses sub-titles • ChaiCode - RAG
+            can be inaccurate, please double-check responses.
+          </p>
         </div>
-        <p className="text-white/40 text-xs mt-2 text-center">
-          RAG-powered responses based on couses sub-titles • ChaiCode - RAG can
-          be inaccurate, please double-check responses.
-        </p>
-      </div>
+      )}
     </div>
   );
 }

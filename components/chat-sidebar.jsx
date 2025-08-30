@@ -1,0 +1,465 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  MessageSquare,
+  Plus,
+  Search,
+  Library,
+  User,
+  Bot,
+  Settings,
+  Crown,
+  MoreHorizontal,
+  Share,
+  Edit,
+  Archive,
+  Trash2,
+} from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  getAllConversations,
+  createConversation,
+  updateConversation,
+  deleteConversation,
+  archiveConversation,
+} from "@/lib/api";
+import { ShareModal } from "@/components/share-modal";
+import { useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
+
+const ChatSidebar = ({ onNewChat, onSelectChat, currentChatId }) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [conversations, setConversations] = useState([]);
+  const [filteredConversations, setFilteredConversations] = useState([]);
+  const [hoveredConversation, setHoveredConversation] = useState(null);
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState(null);
+
+  const { data: session } = useSession();
+
+  // Load conversations from API
+  const loadConversations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getAllConversations({ page: 1, limit: 50 });
+
+      if (response.success) {
+        const formattedConversations = response.data.conversations.map(
+          (conv) => ({
+            id: conv.id,
+            title: conv.title,
+            lastMessage: conv.lastMessage?.message || "No messages yet",
+            timestamp: formatTimestamp(conv.lastMessageAt),
+            messageCount: conv.messageCount,
+            isActive: conv.isActive,
+            createdAt: conv.createdAt,
+            lastMessageAt: conv.lastMessageAt,
+          })
+        );
+
+        setConversations(formattedConversations);
+        setFilteredConversations(formattedConversations);
+      }
+    } catch (err) {
+      console.error("Failed to load conversations:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadConversations();
+  }, []);
+
+  // Filter conversations based on search query
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredConversations(conversations);
+    } else {
+      const filtered = conversations.filter(
+        (conv) =>
+          conv.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          conv.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredConversations(filtered);
+    }
+  }, [searchQuery, conversations]);
+
+  // Helper function to format timestamp
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return "Unknown";
+
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) {
+      return diffMins <= 1 ? "Just now" : `${diffMins} minutes ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+    } else if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return `${weeks} week${weeks > 1 ? "s" : ""} ago`;
+    } else {
+      const months = Math.floor(diffDays / 30);
+      return `${months} month${months > 1 ? "s" : ""} ago`;
+    }
+  };
+
+  const handleNewChat = async () => {
+    try {
+      const response = await createConversation("New Chat");
+      if (response.success) {
+        await loadConversations(); // Refresh the list
+        // Redirect to the new conversation page
+        window.location.href = `/conversation/${response.data.conversation.id}`;
+      }
+    } catch (err) {
+      console.error("Failed to create conversation:", err);
+      setError(err.message);
+    }
+  };
+
+  const handleMenuAction = async (action, conversation, e) => {
+    e.stopPropagation(); // Prevent conversation selection
+    console.log(`${action} conversation:`, conversation);
+
+    switch (action) {
+      case "share":
+        setSelectedConversation(conversation);
+        setShareModalOpen(true);
+        break;
+      case "rename":
+        const newTitle = prompt("Enter new title:", conversation.title);
+        if (newTitle && newTitle.trim() !== conversation.title) {
+          try {
+            const response = await updateConversation(
+              conversation.id,
+              newTitle.trim()
+            );
+            if (response.success) {
+              await loadConversations(); // Refresh the list
+            }
+          } catch (err) {
+            console.error("Failed to rename conversation:", err);
+            setError(err.message);
+          }
+        }
+        break;
+      case "archive":
+        try {
+          const response = await archiveConversation(conversation.id, {
+            title: conversation.title,
+            description: `Archived conversation from ${new Date().toLocaleDateString()}`,
+          });
+          if (response.success) {
+            await loadConversations(); // Refresh the list
+            console.log("Conversation archived successfully");
+          }
+        } catch (err) {
+          console.error("Failed to archive conversation:", err);
+          setError(err.message);
+        }
+        break;
+      case "delete":
+        if (
+          confirm(`Are you sure you want to delete "${conversation.title}"?`)
+        ) {
+          try {
+            const response = await deleteConversation(conversation.id);
+            if (response.success) {
+              await loadConversations(); // Refresh the list
+            }
+          } catch (err) {
+            console.error("Failed to delete conversation:", err);
+            setError(err.message);
+          }
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
+  const navigationItems = [
+    { icon: Plus, label: "New chat", onClick: handleNewChat },
+    { icon: Search, label: "Search chats", onClick: () => {} },
+    {
+      icon: Library,
+      label: "Archives",
+      onClick: () => (window.location.href = "/archives"),
+    },
+  ];
+
+  const bottomItems = [
+    { icon: User, label: "Sora", onClick: () => {} },
+    { icon: Crown, label: "GPTs", onClick: () => {} },
+  ];
+
+  return (
+    <div className="w-80 bg-card/50 backdrop-blur-sm flex flex-col h-full border-r border-border/50">
+      {/* Header */}
+      <div className="p-4 border-b border-border/50">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-6 h-6 rounded-sm bg-muted flex items-center justify-center">
+            <img src="/icon.svg" alt="Icon" className="h-4 w-4" />
+          </div>
+        </div>
+
+        {/* Navigation Items */}
+        <div className="space-y-2">
+          {navigationItems.map((item, index) => (
+            <Button
+              key={index}
+              variant="ghost"
+              className="w-full justify-start text-muted-foreground hover:bg-accent hover:text-foreground"
+              onClick={item.onClick}
+            >
+              <item.icon className="h-4 w-4 mr-3" />
+              {item.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="p-4 border-b border-border/50">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search chats"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-background/50 border-border text-foreground placeholder-muted-foreground focus:border-primary"
+          />
+        </div>
+      </div>
+
+      {/* Chats Section */}
+      <div className="flex-1 overflow-hidden">
+        <div className="p-4">
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">
+            Chats
+          </h3>
+        </div>
+
+        <ScrollArea className="flex-1 px-2 [&>div>div]:!block">
+          <div className="space-y-1 pb-4 max-h-full overflow-y-auto">
+            {loading && (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-muted-foreground text-sm">
+                  Loading conversations...
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="flex items-center justify-center py-4">
+                <div className="text-destructive text-sm text-center">
+                  <div>Failed to load conversations</div>
+                  <button
+                    onClick={loadConversations}
+                    className="mt-2 text-xs underline hover:no-underline"
+                  >
+                    Try again
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!loading && !error && filteredConversations.length === 0 && (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-muted-foreground text-sm text-center">
+                  {searchQuery
+                    ? "No conversations found"
+                    : "No conversations yet"}
+                </div>
+              </div>
+            )}
+
+            {!loading &&
+              !error &&
+              filteredConversations.map((conversation) => (
+                <div
+                  key={conversation.id}
+                  className="relative group"
+                  onMouseEnter={() => setHoveredConversation(conversation.id)}
+                  onMouseLeave={() => {
+                    if (openDropdown !== conversation.id) {
+                      setHoveredConversation(null);
+                    }
+                  }}
+                >
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-start text-left p-3 h-auto hover:bg-accent",
+                      currentChatId === conversation.id ? "bg-accent" : ""
+                    )}
+                    onClick={() => {
+                      // Navigate to conversation page
+                      window.location.href = `/conversation/${conversation.id}`;
+                    }}
+                  >
+                    <div className="flex-1 min-w-0 pr-8">
+                      <div className="text-sm font-medium text-foreground truncate mb-1">
+                        {conversation.title}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {conversation.lastMessage}
+                      </div>
+                    </div>
+                  </Button>
+
+                  {/* Three-dot menu */}
+                  {hoveredConversation === conversation.id && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                      <DropdownMenu
+                        onOpenChange={(open) => {
+                          if (open) {
+                            setOpenDropdown(conversation.id);
+                          } else {
+                            setOpenDropdown(null);
+                            setHoveredConversation(null);
+                          }
+                        }}
+                      >
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-48 bg-popover border-border"
+                          onCloseAutoFocus={(e) => e.preventDefault()}
+                        >
+                          <DropdownMenuItem
+                            onClick={(e) =>
+                              handleMenuAction("share", conversation, e)
+                            }
+                            className="text-foreground hover:bg-accent cursor-pointer"
+                          >
+                            <Share className="mr-2 h-4 w-4" />
+                            Share
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) =>
+                              handleMenuAction("rename", conversation, e)
+                            }
+                            className="text-foreground hover:bg-accent cursor-pointer"
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                            Rename
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) =>
+                              handleMenuAction("archive", conversation, e)
+                            }
+                            className="text-foreground hover:bg-accent cursor-pointer"
+                          >
+                            <Archive className="mr-2 h-4 w-4" />
+                            Archive
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) =>
+                              handleMenuAction("delete", conversation, e)
+                            }
+                            className="text-destructive hover:bg-accent cursor-pointer"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
+                </div>
+              ))}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* User Profile */}
+      <div className="p-4 border-t border-border/50">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src="/placeholder-avatar.jpg" />
+            <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+              SS
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-foreground">
+              {session?.user?.name}
+            </div>
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Sign Out</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </div>
+
+      {/* Share Modal */}
+      {selectedConversation && (
+        <ShareModal
+          isOpen={shareModalOpen}
+          onClose={() => {
+            setShareModalOpen(false);
+            setSelectedConversation(null);
+          }}
+          conversationId={selectedConversation.id}
+          conversationTitle={selectedConversation.title}
+        />
+      )}
+    </div>
+  );
+};
+
+export default ChatSidebar;

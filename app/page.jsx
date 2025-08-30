@@ -9,12 +9,16 @@ export default function HomePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Redirect authenticated users to the app
+  // Redirect authenticated users based on role
   useEffect(() => {
-    if (status === "authenticated") {
-      router.push("/app");
+    if (status === "authenticated" && session?.user) {
+      if (session.user.role === "admin") {
+        router.push("/dashboard");
+      } else {
+        router.push("/app");
+      }
     }
-  }, [status, router]);
+  }, [status, session, router]);
 
   // Show loading while checking authentication
   if (status === "loading") {

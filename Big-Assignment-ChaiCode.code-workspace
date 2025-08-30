@@ -1,11 +1,11 @@
 {
-	"folders": [
-		{
-			"path": "../Big-Assignment-ChaiCode"
-		},
-		{
-			"path": "."
-		}
-	],
-	"settings": {}
+  "folders": [
+    {
+      "path": "../Big-Assignment-ChaiCode"
+    },
+    {
+      "path": "."
+    }
+  ],
+  "settings": {}
 }

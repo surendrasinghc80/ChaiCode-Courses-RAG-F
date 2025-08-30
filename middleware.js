@@ -21,6 +21,19 @@ export default withAuth(
       return NextResponse.next();
     }
 
+    // Handle shared conversations - require authentication but allow access
+    if (nextUrl.pathname.startsWith("/shared/")) {
+      if (!isAuth) {
+        const loginUrl = new URL("/login", nextUrl);
+        loginUrl.searchParams.set(
+          "callbackUrl",
+          nextUrl.pathname + nextUrl.search
+        );
+        return NextResponse.redirect(loginUrl);
+      }
+      return NextResponse.next();
+    }
+
     // Allow unauthenticated users to access root path (landing page)
     if (!isAuth && isRootRoute) {
       return NextResponse.next();
